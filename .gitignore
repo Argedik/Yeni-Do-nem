@@ -1,0 +1,7 @@
+# Panelden indirilen yedekler kişisel veri içerir (isim, telefon) —
+# depo herkese açık olduğu için asla git'e girmemeli.
+sekreterya-yedek-*.json
+*yedek*.json
+
+# macOS
+.DS_Store

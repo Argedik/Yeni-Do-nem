@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sekreterya Paneli — TÜGVA Üniversite Birimi</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">S</div>
+    <div>
+      <h1>Sekreterya Paneli</h1>
+      <p id="birimAdi">TÜGVA Üniversite Birimi</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="bugun-tarih" id="bugunTarih"></div>
+    <button class="btn ghost sm" id="bildirimAc" title="Tarayıcı bildirimlerine izin ver">🔔 Bildirim</button>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-view="bugun" class="active">📋 Bugün</button>
+  <button data-view="takvim">🗓️ Takvim</button>
+  <button data-view="rutin">🔁 Rutin İşler</button>
+  <button data-view="toplanti">🪑 Toplantılar</button>
+  <button data-view="liste">👥 Liste</button>
+  <button data-view="sablon">✉️ Şablonlar</button>
+  <button data-view="drive">📁 Drive</button>
+  <button data-view="ayar">⚙️ Ayarlar</button>
+</nav>
+
+<main id="app"></main>
+
+<div id="modalKatman" class="modal-katman" hidden>
+  <div class="modal" id="modal"></div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<div id="printArea"></div>
+
+<footer class="altbilgi">
+  Veriler yalnızca bu tarayıcıda saklanır. Ayarlar sekmesinden düzenli <b>yedek</b> almayı unutma.
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
