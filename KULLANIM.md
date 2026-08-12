@@ -29,8 +29,10 @@ Chrome veya Brave kullan (`Paneli-Ac.command` bunu zaten kendisi seçer).
 
 ## Mantık
 - **Toplantıya bağlı** işler her toplantı tarihine göre kendiliğinden oluşur; her hafta elle yazmıyorsun.
+  Bir iş birden fazla güne düşebilir: Düzenle → kaydırma alanına `-1, 0` yazarsan hem bir gün önce
+  hem toplantı günü listeye gelir (her gün ayrı ayrı işaretlenir).
   - Toplantıdan 1 gün önce → 3 adet gündem çıktısı + 1 adet son tutanak çıktısı
-  - Toplantı günü 12:00 → GM grubuna hatırlatma
+  - Toplantıdan 1 gün önce **ve** toplantı günü, 12:00 → GM grubuna hatırlatma (iki gün de çıkar)
   - Toplantıdan 1 gün sonra → tutanak + yoklama güncelleme + **yeni katılan hanımlar listeye eklendi mi kontrolü**
 - **Aylık** işler ayın belirli gününde çıkar (ana birim hatırlatması ayın 21'i, rapor teslimi 28'i).
 - **Sürekli takip** işleri tarihsizdir (genel merkez görev değişikliğinde liste düzenleme gibi).

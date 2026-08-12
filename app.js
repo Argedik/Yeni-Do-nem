@@ -50,13 +50,13 @@ function varsayilanVeri() {
       baslangic: bugunISO(),    // bu tarihten öncesi "geciken" sayılmaz
     },
     isler: [
-      { id: yeniId(), ad: 'Toplantı hatırlatma mesajını GM grubuna ilet', kategori: 'İletişim', tip: 'toplanti', ofset: 0, saat: '12:00', aciklama: '', link: '' },
-      { id: yeniId(), ad: '3 adet gündem maddesi + 1 adet son tutanak çıktısı al', kategori: 'Toplantı', tip: 'toplanti', ofset: -1, saat: '20:00', aciklama: 'Toplantı kartında: "Gündem çıktısı" ile 3 madde, "Son tutanak" ile önceki toplantının tutanağı.', link: '' },
-      { id: yeniId(), ad: 'Tutanağı hazırla ve Drive dosyasına ekle', kategori: 'Arşiv', tip: 'toplanti', ofset: 1, saat: '21:00', aciklama: '', link: '' },
-      { id: yeniId(), ad: 'Yoklamayı Drive dosyasında güncelle', kategori: 'Arşiv', tip: 'toplanti', ofset: 1, saat: '21:30', aciklama: '', link: '' },
+      { id: yeniId(), ad: 'Toplantı hatırlatma mesajını GM grubuna ilet', kategori: 'İletişim', tip: 'toplanti', ofsetler: [-1, 0], saat: '12:00', aciklama: '', link: '' },
+      { id: yeniId(), ad: '3 adet gündem maddesi + 1 adet son tutanak çıktısı al', kategori: 'Toplantı', tip: 'toplanti', ofsetler: [-1], saat: '20:00', aciklama: 'Toplantı kartında: "Gündem çıktısı" ile 3 madde, "Son tutanak" ile önceki toplantının tutanağı.', link: '' },
+      { id: yeniId(), ad: 'Tutanağı hazırla ve Drive dosyasına ekle', kategori: 'Arşiv', tip: 'toplanti', ofsetler: [1], saat: '21:00', aciklama: '', link: '' },
+      { id: yeniId(), ad: 'Yoklamayı Drive dosyasında güncelle', kategori: 'Arşiv', tip: 'toplanti', ofsetler: [1], saat: '21:30', aciklama: '', link: '' },
       { id: yeniId(), ad: 'Ana birime aylık rapor hatırlatması yap', kategori: 'Rapor', tip: 'aylik', ayGunu: 21, saat: '10:00', aciklama: 'Rapor tesliminden 1 hafta önce ana birimi uyar.', link: '' },
       { id: yeniId(), ad: 'Aylık raporu sunum haline getir ve ana birime gönder', kategori: 'Rapor', tip: 'aylik', ayGunu: 28, saat: '18:00', aciklama: '', link: '' },
-      { id: yeniId(), ad: 'Ekibe yeni katılan hanımlar listeye eklendi mi? — kontrol et', kategori: 'Liste', tip: 'toplanti', ofset: 1, saat: '21:45', aciklama: 'Drive\'daki güncel listeyi aç, toplantıya yeni gelen hanımları ekle.', link: '' },
+      { id: yeniId(), ad: 'Ekibe yeni katılan hanımlar listeye eklendi mi? — kontrol et', kategori: 'Liste', tip: 'toplanti', ofsetler: [1], saat: '21:45', aciklama: 'Drive\'daki güncel listeyi aç, toplantıya yeni gelen hanımları ekle.', link: '' },
       { id: yeniId(), ad: 'Genel merkez görev değişikliğinde güncel listeyi düzenle', kategori: 'Liste', tip: 'surekli', aciklama: 'Görev değişikliği veya ayrılma olduğunda Drive\'daki listeyi güncelle.', link: '' },
     ],
     toplantilar: [],
@@ -69,7 +69,7 @@ function varsayilanVeri() {
     ],
     yapildi: {},   // "isId#YYYY-MM-DD" -> {t: zaman}
     surekli: {},   // isId -> son yapıldı ISO
-    surum: 5,      // veri şeması sürümü (göç için)
+    surum: 6,      // veri şeması sürümü (göç için)
   };
 }
 
@@ -161,6 +161,16 @@ function goc(v) {
     }
     v.surum = 5;
   }
+  if (v.surum < 6) {
+    // Tek kaydırma (ofset) → çoklu kaydırma (ofsetler). GM hatırlatması iki güne çıkarıldı.
+    v.isler.filter(i => i.tip === 'toplanti').forEach(i => {
+      if (!Array.isArray(i.ofsetler)) i.ofsetler = [Number(i.ofset) || 0];
+      delete i.ofset;
+    });
+    const gm = v.isler.find(i => i.ad === 'Toplantı hatırlatma mesajını GM grubuna ilet');
+    if (gm) gm.ofsetler = [-1, 0];
+    v.surum = 6;
+  }
   return v;
 }
 
@@ -194,11 +204,13 @@ function olusumlar(baslaISO, bitISO) {
       if (uygun) out.push(olusumYap(is, g));
     }
   }
-  // Toplantıya bağlı işler
+  // Toplantıya bağlı işler — bir iş birden fazla güne düşebilir (örn. bir gün önce VE toplantı günü)
   for (const is of aktifIsler.filter(i => i.tip === 'toplanti')) {
     for (const t of state.toplantilar) {
-      const g = gunEkle(t.tarih, Number(is.ofset) || 0);
-      if (gunFarki(baslaISO, g) >= 0 && gunFarki(g, bitISO) >= 0) out.push(olusumYap(is, g, t.id));
+      for (const o of ofsetListesi(is)) {
+        const g = gunEkle(t.tarih, o);
+        if (gunFarki(baslaISO, g) >= 0 && gunFarki(g, bitISO) >= 0) out.push(olusumYap(is, g, t.id));
+      }
     }
   }
   out.sort((a, b) => (a.tarih + (a.saat || '99:99')).localeCompare(b.tarih + (b.saat || '99:99')));
@@ -210,6 +222,20 @@ function olusumYap(is, tarih, toplantiId) {
 }
 function surekliIsler() { return state.isler.filter(i => !i.arsiv && i.tip === 'surekli'); }
 
+/** Toplantıya bağlı işin kaydırma listesi. Eski tek değerli (ofset) kayıtlarla uyumlu. */
+function ofsetListesi(is) {
+  const ham = Array.isArray(is.ofsetler) && is.ofsetler.length ? is.ofsetler : [is.ofset ?? 0];
+  const temiz = [...new Set(ham.map(Number).filter(Number.isFinite))].sort((a, b) => a - b);
+  return temiz.length ? temiz : [0];
+}
+
+/** Tek kaydırmanın okunur karşılığı: -1 → "Toplantıdan 1 gün önce" */
+function ofsetMetni(o, kisa) {
+  if (o === 0) return kisa ? 'toplantı günü' : 'Toplantı günü';
+  const yon = o < 0 ? 'önce' : 'sonra';
+  return `${kisa ? '' : 'Toplantıdan '}${Math.abs(o)} gün ${yon}`;
+}
+
 function tekrarMetni(is) {
   switch (is.tip) {
     case 'haftalik': return `Her ${GUN_ADLARI[Number(is.gun)]}`;
@@ -217,9 +243,9 @@ function tekrarMetni(is) {
     case 'tekseferlik': return `Tek seferlik — ${kisaTarih(is.tarih)}`;
     case 'surekli': return 'Sürekli takip (tarihsiz)';
     case 'toplanti': {
-      const o = Number(is.ofset) || 0;
-      if (o === 0) return 'Toplantı günü';
-      return o < 0 ? `Toplantıdan ${-o} gün önce` : `Toplantıdan ${o} gün sonra`;
+      const l = ofsetListesi(is);
+      return l.length === 1 ? ofsetMetni(l[0])
+        : 'Toplantıdan ' + l.map(o => ofsetMetni(o, true)).join(' ve ');
     }
     default: return '';
   }
@@ -457,8 +483,8 @@ function kisaZaman(is) {
   const s = is.saat ? ' ' + is.saat : '';
   switch (is.tip) {
     case 'toplanti': {
-      const o = Number(is.ofset) || 0;
-      return (o === 0 ? 'Toplantı günü' : o < 0 ? `${-o} gün önce` : `${o} gün sonra`) + s;
+      const m = ofsetListesi(is).map(o => ofsetMetni(o, true)).join(' + ');
+      return m.charAt(0).toLocaleUpperCase('tr') + m.slice(1) + s;
     }
     case 'haftalik': return GUN_ADLARI[Number(is.gun)].slice(0, 3) + s;
     case 'aylik': return `Ayın ${is.ayGunu}'i` + s;
@@ -556,8 +582,9 @@ function isFormuAc(id) {
     const tip = document.getElementById('f_tip').value;
     const d = document.getElementById('f_detay');
     if (tip === 'toplanti') d.innerHTML = `<div class="alan"><label>Toplantıya göre kaydırma (gün)</label>
-      <input type="number" id="f_ofset" value="${is.ofset ?? 0}" step="1">
-      <span class="ipucu">-1 = bir gün önce · 0 = toplantı günü · 1 = bir gün sonra</span></div>`;
+      <input type="text" id="f_ofset" value="${ofsetListesi(is).join(', ')}" placeholder="Örn: -1, 0">
+      <span class="ipucu">-1 = bir gün önce · 0 = toplantı günü · 1 = bir gün sonra.
+      Birden fazla güne düşsün istersen virgülle yaz: <b>-1, 0</b> → hem bir gün önce hem toplantı günü.</span></div>`;
     else if (tip === 'haftalik') d.innerHTML = `<div class="alan"><label>Hangi gün</label><select id="f_gun">
       ${GUN_ADLARI.map((g, i) => `<option value="${i}" ${secili(i, is.gun ?? 3)}>${g}</option>`).join('')}</select></div>`;
     else if (tip === 'aylik') d.innerHTML = `<div class="alan"><label>Ayın kaçı</label>
@@ -580,13 +607,21 @@ function isKaydet(id) {
     id: id || yeniId(), ad, kategori: al('f_kat'), tip, saat: al('f_saat'),
     aciklama: al('f_aciklama'), link: al('f_link'), arsiv: false,
   };
-  if (tip === 'toplanti') kayit.ofset = Number(al('f_ofset')) || 0;
+  if (tip === 'toplanti') {
+    const l = [...new Set(al('f_ofset').split(',').map(x => Number(x.trim())).filter(Number.isFinite))]
+      .sort((a, b) => a - b);
+    kayit.ofsetler = l.length ? l : [0];
+    delete kayit.ofset;
+  }
   if (tip === 'haftalik') kayit.gun = Number(al('f_gun'));
   if (tip === 'aylik') kayit.ayGunu = Math.min(31, Math.max(1, Number(al('f_ayGunu')) || 1));
   if (tip === 'tekseferlik') kayit.tarih = al('f_tarih') || bugunISO();
 
   const i = state.isler.findIndex(x => x.id === id);
-  if (i >= 0) state.isler[i] = { ...state.isler[i], ...kayit }; else state.isler.push(kayit);
+  if (i >= 0) {
+    state.isler[i] = { ...state.isler[i], ...kayit };
+    delete state.isler[i].ofset;   // eski tek değerli alan artık kullanılmıyor
+  } else state.isler.push(kayit);
   kaydet(); modalKapat(); ciz(); toast('✔️ Kaydedildi');
 }
 
