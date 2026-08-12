@@ -51,7 +51,7 @@ function varsayilanVeri() {
     },
     isler: [
       { id: yeniId(), ad: 'Toplantı hatırlatma mesajını GM grubuna ilet', kategori: 'İletişim', tip: 'toplanti', ofset: 0, saat: '12:00', aciklama: '', link: '' },
-      { id: yeniId(), ad: '3 adet gündem maddesi çıktısı al', kategori: 'Toplantı', tip: 'toplanti', ofset: -1, saat: '20:00', aciklama: 'Toplantı kartındaki "Gündem çıktısı" butonu ile yazdır.', link: '' },
+      { id: yeniId(), ad: '3 adet gündem maddesi + 1 adet son tutanak çıktısı al', kategori: 'Toplantı', tip: 'toplanti', ofset: -1, saat: '20:00', aciklama: 'Toplantı kartında: "Gündem çıktısı" ile 3 madde, "Son tutanak" ile önceki toplantının tutanağı.', link: '' },
       { id: yeniId(), ad: 'Tutanağı hazırla ve Drive dosyasına ekle', kategori: 'Arşiv', tip: 'toplanti', ofset: 1, saat: '21:00', aciklama: '', link: '' },
       { id: yeniId(), ad: 'Yoklamayı Drive dosyasında güncelle', kategori: 'Arşiv', tip: 'toplanti', ofset: 1, saat: '21:30', aciklama: '', link: '' },
       { id: yeniId(), ad: 'Ana birime aylık rapor hatırlatması yap', kategori: 'Rapor', tip: 'aylik', ayGunu: 21, saat: '10:00', aciklama: 'Rapor tesliminden 1 hafta önce ana birimi uyar.', link: '' },
@@ -69,7 +69,7 @@ function varsayilanVeri() {
     ],
     yapildi: {},   // "isId#YYYY-MM-DD" -> {t: zaman}
     surekli: {},   // isId -> son yapıldı ISO
-    surum: 4,      // veri şeması sürümü (göç için)
+    surum: 5,      // veri şeması sürümü (göç için)
   };
 }
 
@@ -151,6 +151,15 @@ function goc(v) {
         .filter(k => k.startsWith(i.id + '#')).forEach(k => delete v.yapildi[k]));
     }
     v.surum = 4;
+  }
+  if (v.surum < 5) {
+    // Gündem çıktısına bir önceki toplantının tutanağı eklendi.
+    const g = v.isler.find(i => i.ad === '3 adet gündem maddesi çıktısı al');
+    if (g) {
+      g.ad = '3 adet gündem maddesi + 1 adet son tutanak çıktısı al';
+      g.aciklama = 'Toplantı kartında: "Gündem çıktısı" ile 3 madde, "Son tutanak" ile önceki toplantının tutanağı.';
+    }
+    v.surum = 5;
   }
   return v;
 }
@@ -621,14 +630,29 @@ function gorunumToplanti() {
   ${gecmis.length ? `<div class="bolum-baslik">Geçmiş (${gecmis.length})</div>${gecmis.slice(0, 20).map(toplantiKarti).join('')}` : ''}`;
 }
 
+/**
+ * Bu toplantıdan önceki, tutanak linki girilmiş en son toplantıyı bulur.
+ * Gündem çıktısıyla birlikte alınacak "1 adet son tutanak" için kullanılır.
+ */
+function sonTutanak(t) {
+  return [...state.toplantilar]
+    .filter(x => x.tarih < t.tarih && x.tutanakLink)
+    .sort((a, b) => b.tarih.localeCompare(a.tarih))[0] || null;
+}
+
 function toplantiKarti(t) {
   const gundem = (t.gundem || []).filter(Boolean);
   const mazeretSayisi = (t.mazeretler || '').split('\n').filter(s => s.trim()).length;
+  const onceki = sonTutanak(t);
   return `<div class="kart">
     <div class="kart-bas">
       <h2>${kisaTarih(t.tarih)} · ${GUN_ADLARI[tarihNesnesi(t.tarih).getDay()]} <span class="sayi">${kacik(t.saat || state.ayar.toplantiSaat)}</span></h2>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn sm gri" data-act="gundem-yazdir" data-id="${t.id}">🖨️ Gündem çıktısı</button>
+        ${onceki
+      ? `<a class="btn sm gri" href="${kacik(onceki.tutanakLink)}" target="_blank" rel="noopener"
+             title="${kisaTarih(onceki.tarih)} toplantısının tutanağı — açıp 1 adet yazdır">📝 Son tutanak</a>`
+      : `<button class="btn sm gri" data-act="tutanak-yok">📝 Son tutanak</button>`}
         <button class="btn sm gri" data-act="mazeret-kopya" data-id="${t.id}">📋 Mazeret listesi</button>
         <button class="btn sm gri" data-act="toplanti-duzenle" data-id="${t.id}">Düzenle</button>
       </div></div>
@@ -752,13 +776,15 @@ function gundemYazdir(id) {
   if (!t) return;
   const g = (t.gundem || []).filter(Boolean);
   if (!g.length) { toast('⚠️ Önce gündem maddelerini gir'); return; }
+  const onceki = sonTutanak(t);
   yazdir(`<div class="p-ust">
       <h1>${kacik(state.ayar.birim)}</h1>
       <div>TOPLANTI GÜNDEMİ</div>
       <div>${uzunTarih(t.tarih)} · ${kacik(t.saat || state.ayar.toplantiSaat)}${t.yer ? ' · ' + kacik(t.yer) : ''}</div>
     </div>
     <ol>${g.map(x => `<li>${kacik(x)}</li>`).join('')}</ol>
-    <div class="p-alt">Katılan: ............ &nbsp;&nbsp; Mazeret: ............ &nbsp;&nbsp; Sekreterya imza: ............</div>`);
+    <div class="p-alt">Katılan: ............ &nbsp;&nbsp; Mazeret: ............ &nbsp;&nbsp; Sekreterya imza: ............</div>
+    ${onceki ? `<div class="p-alt">Ek: ${kisaTarih(onceki.tarih)} tarihli toplantı tutanağı — 1 adet çıktı.</div>` : ''}`);
 }
 
 /* ================================================================
@@ -954,6 +980,9 @@ document.body.addEventListener('click', e => {
       break;
     }
     case 'gundem-yazdir': gundemYazdir(id); break;
+    case 'tutanak-yok':
+      toast('⚠️ Önceki toplantının tutanak linki girilmemiş — o toplantıda Düzenle ile ekle');
+      break;
 
     case 'link-duzenle': linkFormuAc(id); break;
     case 'link-kaydet': {

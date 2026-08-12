@@ -29,7 +29,7 @@ Chrome veya Brave kullan (`Paneli-Ac.command` bunu zaten kendisi seçer).
 
 ## Mantık
 - **Toplantıya bağlı** işler her toplantı tarihine göre kendiliğinden oluşur; her hafta elle yazmıyorsun.
-  - Toplantıdan 1 gün önce → gündem çıktısı
+  - Toplantıdan 1 gün önce → 3 adet gündem çıktısı + 1 adet son tutanak çıktısı
   - Toplantı günü 12:00 → GM grubuna hatırlatma
   - Toplantıdan 1 gün sonra → tutanak + yoklama güncelleme + **yeni katılan hanımlar listeye eklendi mi kontrolü**
 - **Aylık** işler ayın belirli gününde çıkar (ana birim hatırlatması ayın 21'i, rapor teslimi 28'i).
@@ -42,6 +42,9 @@ Chrome veya Brave kullan (`Paneli-Ac.command` bunu zaten kendisi seçer).
 - Toplantı günü **Toplantılar** → kartın **Mazeretler** alanına her satıra bir kişi yaz → **📋 Mazeret listesi**
   ile tarih başlıklı hazır metni kopyala, gruba yapıştır.
 - Toplantı öncesi **Gündem çıktısı** → yazıcıya/PDF'e gönderir (3 madde + imza satırı).
+- Yanındaki **📝 Son tutanak** → bir önceki toplantının tutanak dosyasını açar; oradan 1 adet
+  yazdırırsın. Buton çalışsın diye o toplantının kartında **Düzenle → Tutanak dosya linki**
+  dolu olmalı.
 
 ## Önemli: yedek
 Veriler **yalnızca bu tarayıcıda** durur. Tarayıcı verisi/geçmişi silinirse kaybolur.
