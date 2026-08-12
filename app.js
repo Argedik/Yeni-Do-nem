@@ -51,7 +51,6 @@ function varsayilanVeri() {
     },
     isler: [
       { id: yeniId(), ad: 'Toplantı hatırlatma mesajını GM grubuna ilet', kategori: 'İletişim', tip: 'toplanti', ofset: 0, saat: '12:00', aciklama: '', link: '' },
-      { id: yeniId(), ad: 'Katılım mazeretlerini liste halinde ilet', kategori: 'İletişim', tip: 'toplanti', ofset: 0, saat: '17:00', aciklama: 'Toplantı kartındaki Mazeretler alanına yaz → "Mazeret listesi" ile kopyala.', link: '' },
       { id: yeniId(), ad: '3 adet gündem maddesi çıktısı al', kategori: 'Toplantı', tip: 'toplanti', ofset: -1, saat: '20:00', aciklama: 'Toplantı kartındaki "Gündem çıktısı" butonu ile yazdır.', link: '' },
       { id: yeniId(), ad: 'Tutanağı hazırla ve Drive dosyasına ekle', kategori: 'Arşiv', tip: 'toplanti', ofset: 1, saat: '21:00', aciklama: '', link: '' },
       { id: yeniId(), ad: 'Yoklamayı Drive dosyasında güncelle', kategori: 'Arşiv', tip: 'toplanti', ofset: 1, saat: '21:30', aciklama: '', link: '' },
@@ -70,7 +69,7 @@ function varsayilanVeri() {
     ],
     yapildi: {},   // "isId#YYYY-MM-DD" -> {t: zaman}
     surekli: {},   // isId -> son yapıldı ISO
-    surum: 3,      // veri şeması sürümü (göç için)
+    surum: 4,      // veri şeması sürümü (göç için)
   };
 }
 
@@ -142,6 +141,16 @@ function goc(v) {
       v.ayar.birim = 'TÜGVA Genel Merkez Üniversite Hanım Koordinatörlüğü';
     }
     v.surum = 3;
+  }
+  if (v.surum < 4) {
+    // "Katılım mazeretlerini liste halinde ilet" rutini kaldırıldı (kullanıcı isteği).
+    const cikar = v.isler.filter(i => i.ad === 'Katılım mazeretlerini liste halinde ilet');
+    if (cikar.length) {
+      v.isler = v.isler.filter(i => !cikar.includes(i));
+      cikar.forEach(i => Object.keys(v.yapildi)
+        .filter(k => k.startsWith(i.id + '#')).forEach(k => delete v.yapildi[k]));
+    }
+    v.surum = 4;
   }
   return v;
 }

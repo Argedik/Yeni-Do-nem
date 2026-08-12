@@ -31,7 +31,6 @@ Chrome veya Brave kullan (`Paneli-Ac.command` bunu zaten kendisi seçer).
 - **Toplantıya bağlı** işler her toplantı tarihine göre kendiliğinden oluşur; her hafta elle yazmıyorsun.
   - Toplantıdan 1 gün önce → gündem çıktısı
   - Toplantı günü 12:00 → GM grubuna hatırlatma
-  - Toplantı günü 17:00 → mazeret listesi
   - Toplantıdan 1 gün sonra → tutanak + yoklama güncelleme + **yeni katılan hanımlar listeye eklendi mi kontrolü**
 - **Aylık** işler ayın belirli gününde çıkar (ana birim hatırlatması ayın 21'i, rapor teslimi 28'i).
 - **Sürekli takip** işleri tarihsizdir (genel merkez görev değişikliğinde liste düzenleme gibi).
