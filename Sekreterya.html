@@ -157,6 +157,28 @@ textarea{resize:vertical; min-height:80px; line-height:1.55}
 .nokta.tamam{background:#c3cfdb}
 .gun .mini{font-size:10.5px; color:var(--soluk); line-height:1.25; overflow:hidden}
 
+/* ---------- Açılır satır (Rutin İşler) ---------- */
+.acilir{border-top:1px solid var(--cizgi)}
+.acilir:first-of-type{border-top:0}
+.acilir summary{
+  display:flex; align-items:center; gap:10px; padding:12px 16px; cursor:pointer;
+  list-style:none; user-select:none;
+}
+.acilir summary::-webkit-details-marker{display:none}
+.acilir summary:hover{background:#fbfcfd}
+.acilir .ok{
+  color:var(--soluk); font-size:18px; line-height:1; width:12px; flex-shrink:0;
+  transition:transform .15s; transform-origin:center;
+}
+.acilir[open] .ok{transform:rotate(90deg); color:var(--turkuaz)}
+.acilir .ad{
+  flex:1; min-width:0; font-weight:600; font-size:14.5px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.acilir[open] .ad{white-space:normal; color:var(--turkuaz)}
+.acilir summary .etiket{flex-shrink:0}
+.acilir-ic{padding:0 16px 14px 38px; background:#fbfcfd}
+
 /* ---------- Tablo ---------- */
 table{width:100%; border-collapse:collapse; font-size:14px}
 th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--cizgi)}
@@ -230,6 +252,12 @@ td.sag,th.sag{text-align:right}
   .gun .mini{display:none}
   .is{padding:11px 12px}
   .kart-ic{padding:12px}
+  /* Dar ekranda başlık kırpılmasın: rozet alt satıra insin, ad iki satıra yayılsın */
+  .acilir summary{flex-wrap:wrap; gap:6px 10px}
+  /* ad oku ile aynı satırda kalır, rozet alta iner */
+  .acilir .ad{flex:1 1 calc(100% - 80px); white-space:normal}
+  .acilir summary .etiket{margin-left:22px}
+  .acilir-ic{padding-left:16px}
 }
 
 </style>
@@ -241,7 +269,7 @@ td.sag,th.sag{text-align:right}
     <div class="logo">S</div>
     <div>
       <h1>Sekreterya Paneli</h1>
-      <p id="birimAdi">TÜGVA Üniversite Birimi</p>
+      <p id="birimAdi">TÜGVA Genel Merkez Üniversite Hanım Koordinatörlüğü</p>
     </div>
   </div>
   <div class="topbar-right">
@@ -319,7 +347,7 @@ const yeniId = () => Math.random().toString(36).slice(2, 10) + Date.now().toStri
 function varsayilanVeri() {
   return {
     ayar: {
-      birim: 'TÜGVA Üniversite Birimi',
+      birim: 'TÜGVA Genel Merkez Üniversite Hanım Koordinatörlüğü',
       toplantiGunu: 3,          // 0=Pazar ... 3=Çarşamba
       toplantiSaat: '19:00',
       toplantiYer: '',
@@ -346,7 +374,7 @@ function varsayilanVeri() {
     ],
     yapildi: {},   // "isId#YYYY-MM-DD" -> {t: zaman}
     surekli: {},   // isId -> son yapıldı ISO
-    surum: 2,      // veri şeması sürümü (göç için)
+    surum: 3,      // veri şeması sürümü (göç için)
   };
 }
 
@@ -411,6 +439,13 @@ function goc(v) {
     });
     delete v.uyeler; delete v.sablonlar; delete v.log;
     v.surum = 2;
+  }
+  if (v.surum < 3) {
+    // Birim adı hiç elle değiştirilmemişse yeni resmî adı yaz; özelleştirilmişse dokunma.
+    if (!v.ayar.birim || v.ayar.birim === 'TÜGVA Üniversite Birimi') {
+      v.ayar.birim = 'TÜGVA Genel Merkez Üniversite Hanım Koordinatörlüğü';
+    }
+    v.surum = 3;
   }
   return v;
 }
@@ -703,30 +738,78 @@ function gunModalAc(tarih) {
 /* ================================================================
    GÖRÜNÜM: RUTİN İŞLER
    ================================================================ */
+// Tekrar kuralının satır sonundaki kısa gösterimi: "Toplantı günü · 12:00" -> "Toplantı günü 12:00"
+function kisaZaman(is) {
+  const s = is.saat ? ' ' + is.saat : '';
+  switch (is.tip) {
+    case 'toplanti': {
+      const o = Number(is.ofset) || 0;
+      return (o === 0 ? 'Toplantı günü' : o < 0 ? `${-o} gün önce` : `${o} gün sonra`) + s;
+    }
+    case 'haftalik': return GUN_ADLARI[Number(is.gun)].slice(0, 3) + s;
+    case 'aylik': return `Ayın ${is.ayGunu}'i` + s;
+    case 'tekseferlik': return kisaTarih(is.tarih).slice(0, 5) + s;
+    default: return 'Tarihsiz';
+  }
+}
+
+const RUTIN_GRUPLAR = [
+  { tip: 'toplanti', ad: '🪑 Toplantıya bağlı', not: 'Her toplantı tarihine göre kendiliğinden oluşur.' },
+  { tip: 'haftalik', ad: '🗓️ Haftalık', not: 'Her hafta aynı gün tekrarlanır.' },
+  { tip: 'aylik', ad: '📅 Aylık', not: 'Her ay aynı günde çıkar.' },
+  { tip: 'tekseferlik', ad: '📌 Tek seferlik', not: 'Sadece belirtilen tarihte çıkar.' },
+  { tip: 'surekli', ad: '♻️ Sürekli takip', not: 'Tarihi yok; "Bugün yaptım" ile işaretlenir.' },
+];
+
 function gorunumRutin() {
   const aktif = state.isler.filter(i => !i.arsiv);
   const arsiv = state.isler.filter(i => i.arsiv);
-  const satir = (is) => `<tr>
-    <td><b>${kacik(is.ad)}</b>${is.aciklama ? `<div class="ipucu">${kacik(is.aciklama)}</div>` : ''}</td>
-    <td><span class="etiket ${is.kategori}">${is.kategori}</span></td>
-    <td>${tekrarMetni(is)}</td>
-    <td>${is.saat || '—'}</td>
-    <td class="sag">
-      <button class="btn sm gri" data-act="is-duzenle" data-id="${is.id}">Düzenle</button>
-      <button class="btn sm ${is.arsiv ? '' : 'gri'}" data-act="is-arsiv" data-id="${is.id}">${is.arsiv ? 'Geri al' : 'Arşivle'}</button>
-    </td></tr>`;
+
+  const grup = (g) => {
+    const liste = aktif.filter(i => i.tip === g.tip);
+    if (!liste.length) return '';
+    return `<div class="kart">
+      <div class="kart-bas"><h2>${g.ad} <span class="sayi">${liste.length}</span></h2></div>
+      <div class="kart-ic sifir">
+        <p class="ipucu" style="padding:9px 16px 0;margin:0">${g.not}</p>
+        ${liste.map(acilirSatir).join('')}
+      </div></div>`;
+  };
 
   return `
-  <div class="serit bilgi">💡 <div><b>Toplantıya bağlı</b> işler, Toplantılar sekmesindeki her toplantı tarihine göre otomatik oluşur — her hafta elle yazmana gerek yok.</div></div>
-  <div class="kart">
-    <div class="kart-bas"><h2>🔁 Rutin işler <span class="sayi">${aktif.length}</span></h2>
-      <button class="btn sm" data-act="is-duzenle" data-id="">+ Yeni iş</button></div>
-    <div class="kart-ic sifir">
-      <table><thead><tr><th>İş</th><th>Kategori</th><th>Tekrar</th><th>Saat</th><th class="sag">İşlem</th></tr></thead>
-      <tbody>${aktif.map(satir).join('') || `<tr><td colspan="5"><div class="bos">Henüz iş yok.</div></td></tr>`}</tbody></table>
-    </div></div>
-  ${arsiv.length ? `<div class="kart"><div class="kart-bas"><h2>🗄️ Arşivlenmiş <span class="sayi">${arsiv.length}</span></h2></div>
-    <div class="kart-ic sifir"><table><tbody>${arsiv.map(satir).join('')}</tbody></table></div></div>` : ''}`;
+  <div class="serit bilgi">💡 <div>Burada işlerin <b>tekrar kuralı</b> durur. Bir işe dokununca ayrıntısı açılır.</div></div>
+  <div class="kart"><div class="kart-bas">
+    <h2>🔁 Rutin işler <span class="sayi">${aktif.length}</span></h2>
+    <button class="btn sm" data-act="is-duzenle" data-id="">+ Yeni iş</button>
+  </div></div>
+  ${RUTIN_GRUPLAR.map(grup).join('') || `<div class="kart"><div class="bos">Henüz iş yok. <b>+ Yeni iş</b> ile başla.</div></div>`}
+  ${arsiv.length ? `<div class="kart">
+    <div class="kart-bas"><h2>🗄️ Arşivlenmiş <span class="sayi">${arsiv.length}</span></h2></div>
+    <div class="kart-ic sifir">${arsiv.map(acilirSatir).join('')}</div></div>` : ''}`;
+}
+
+// Tek satır: kapalıyken tek satır özet, tıklanınca ayrıntı açılır.
+function acilirSatir(is) {
+  const link = is.link || driveUrl(is.kategori);
+  return `<details class="acilir">
+    <summary>
+      <span class="ok">›</span>
+      <span class="ad">${kacik(is.ad)}</span>
+      <span class="etiket saat">${kacik(kisaZaman(is))}</span>
+    </summary>
+    <div class="acilir-ic">
+      <div class="is-alt" style="margin:0 0 10px">
+        <span class="etiket ${is.kategori}">${is.kategori}</span>
+        <span class="etiket saat">${tekrarMetni(is)}${is.saat ? ' · ' + is.saat : ''}</span>
+      </div>
+      ${is.aciklama ? `<p style="margin:0 0 10px">${kacik(is.aciklama)}</p>`
+      : `<p class="ipucu" style="margin:0 0 10px">Açıklama yok.</p>`}
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${link ? `<a class="btn sm gri" href="${kacik(link)}" target="_blank" rel="noopener">📁 Drive</a>` : ''}
+        <button class="btn sm gri" data-act="is-duzenle" data-id="${is.id}">Düzenle</button>
+        <button class="btn sm gri" data-act="is-arsiv" data-id="${is.id}">${is.arsiv ? '↩️ Geri al' : '🗄️ Arşivle'}</button>
+      </div>
+    </div></details>`;
 }
 
 function isFormuAc(id) {

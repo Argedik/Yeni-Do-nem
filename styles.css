@@ -150,6 +150,28 @@ textarea{resize:vertical; min-height:80px; line-height:1.55}
 .nokta.tamam{background:#c3cfdb}
 .gun .mini{font-size:10.5px; color:var(--soluk); line-height:1.25; overflow:hidden}
 
+/* ---------- Açılır satır (Rutin İşler) ---------- */
+.acilir{border-top:1px solid var(--cizgi)}
+.acilir:first-of-type{border-top:0}
+.acilir summary{
+  display:flex; align-items:center; gap:10px; padding:12px 16px; cursor:pointer;
+  list-style:none; user-select:none;
+}
+.acilir summary::-webkit-details-marker{display:none}
+.acilir summary:hover{background:#fbfcfd}
+.acilir .ok{
+  color:var(--soluk); font-size:18px; line-height:1; width:12px; flex-shrink:0;
+  transition:transform .15s; transform-origin:center;
+}
+.acilir[open] .ok{transform:rotate(90deg); color:var(--turkuaz)}
+.acilir .ad{
+  flex:1; min-width:0; font-weight:600; font-size:14.5px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.acilir[open] .ad{white-space:normal; color:var(--turkuaz)}
+.acilir summary .etiket{flex-shrink:0}
+.acilir-ic{padding:0 16px 14px 38px; background:#fbfcfd}
+
 /* ---------- Tablo ---------- */
 table{width:100%; border-collapse:collapse; font-size:14px}
 th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--cizgi)}
@@ -223,4 +245,10 @@ td.sag,th.sag{text-align:right}
   .gun .mini{display:none}
   .is{padding:11px 12px}
   .kart-ic{padding:12px}
+  /* Dar ekranda başlık kırpılmasın: rozet alt satıra insin, ad iki satıra yayılsın */
+  .acilir summary{flex-wrap:wrap; gap:6px 10px}
+  /* ad oku ile aynı satırda kalır, rozet alta iner */
+  .acilir .ad{flex:1 1 calc(100% - 80px); white-space:normal}
+  .acilir summary .etiket{margin-left:22px}
+  .acilir-ic{padding-left:16px}
 }
