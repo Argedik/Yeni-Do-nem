@@ -163,9 +163,6 @@ th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--cizgi)}
 th{font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:var(--soluk); background:#fafbfc}
 tr:last-child td{border-bottom:0}
 td.sag,th.sag{text-align:right}
-.durum{font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:20px}
-.durum.aktif{background:#e6f4ee; color:var(--yesil)}
-.durum.ayrildi{background:#eef1f4; color:var(--soluk)}
 
 /* ---------- Drive kutuları ---------- */
 .link-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px}
@@ -177,20 +174,7 @@ td.sag,th.sag{text-align:right}
 .link-kutu .url{font-size:11.5px; color:var(--soluk); word-break:break-all; line-height:1.35}
 .link-kutu .satir{display:flex; gap:6px}
 
-/* ---------- Katılım ---------- */
-.katilim-satir{display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--cizgi); flex-wrap:wrap}
-.katilim-satir:last-child{border-bottom:0}
-.katilim-satir .ad{flex:1; min-width:130px; font-weight:600; font-size:14px}
-.katilim-satir .gorev{font-size:12px; color:var(--soluk)}
-.secenek{display:flex; gap:4px}
-.secenek button{
-  font-family:inherit; font-size:12.5px; font-weight:600; padding:5px 10px; border-radius:8px;
-  border:1px solid var(--cizgi); background:#fff; color:var(--soluk); cursor:pointer;
-}
-.secenek button.sec-katildi.aktif{background:#e6f4ee; border-color:#a9d8bf; color:var(--yesil)}
-.secenek button.sec-mazeret.aktif{background:#fdf4e3; border-color:#f2ddb4; color:var(--turuncu)}
-.secenek button.sec-yok.aktif{background:#fdecea; border-color:#f3c9c4; color:var(--kirmizi)}
-
+/* ---------- Rozet şeridi ---------- */
 .rozet-sira{display:flex; gap:8px; flex-wrap:wrap; font-size:13px; color:var(--soluk)}
 .rozet-sira b{color:var(--yazi)}
 
@@ -271,8 +255,6 @@ td.sag,th.sag{text-align:right}
   <button data-view="takvim">🗓️ Takvim</button>
   <button data-view="rutin">🔁 Rutin İşler</button>
   <button data-view="toplanti">🪑 Toplantılar</button>
-  <button data-view="liste">👥 Liste</button>
-  <button data-view="sablon">✉️ Şablonlar</button>
   <button data-view="drive">📁 Drive</button>
   <button data-view="ayar">⚙️ Ayarlar</button>
 </nav>
@@ -344,17 +326,17 @@ function varsayilanVeri() {
       baslangic: bugunISO(),    // bu tarihten öncesi "geciken" sayılmaz
     },
     isler: [
-      { id: yeniId(), ad: 'Toplantı hatırlatma mesajını GM grubuna ilet', kategori: 'İletişim', tip: 'toplanti', ofset: 0, saat: '12:00', aciklama: 'Şablonlar sekmesindeki hazır metni kopyalayıp gruba at.', link: '' },
-      { id: yeniId(), ad: 'Katılım mazeretlerini liste halinde ilet', kategori: 'İletişim', tip: 'toplanti', ofset: 0, saat: '17:00', aciklama: 'Toplantılar sekmesinde katılım işaretle → "Mazeret listesini kopyala".', link: '' },
+      { id: yeniId(), ad: 'Toplantı hatırlatma mesajını GM grubuna ilet', kategori: 'İletişim', tip: 'toplanti', ofset: 0, saat: '12:00', aciklama: '', link: '' },
+      { id: yeniId(), ad: 'Katılım mazeretlerini liste halinde ilet', kategori: 'İletişim', tip: 'toplanti', ofset: 0, saat: '17:00', aciklama: 'Toplantı kartındaki Mazeretler alanına yaz → "Mazeret listesi" ile kopyala.', link: '' },
       { id: yeniId(), ad: '3 adet gündem maddesi çıktısı al', kategori: 'Toplantı', tip: 'toplanti', ofset: -1, saat: '20:00', aciklama: 'Toplantı kartındaki "Gündem çıktısı" butonu ile yazdır.', link: '' },
       { id: yeniId(), ad: 'Tutanağı hazırla ve Drive dosyasına ekle', kategori: 'Arşiv', tip: 'toplanti', ofset: 1, saat: '21:00', aciklama: '', link: '' },
       { id: yeniId(), ad: 'Yoklamayı Drive dosyasında güncelle', kategori: 'Arşiv', tip: 'toplanti', ofset: 1, saat: '21:30', aciklama: '', link: '' },
       { id: yeniId(), ad: 'Ana birime aylık rapor hatırlatması yap', kategori: 'Rapor', tip: 'aylik', ayGunu: 21, saat: '10:00', aciklama: 'Rapor tesliminden 1 hafta önce ana birimi uyar.', link: '' },
       { id: yeniId(), ad: 'Aylık raporu sunum haline getir ve ana birime gönder', kategori: 'Rapor', tip: 'aylik', ayGunu: 28, saat: '18:00', aciklama: '', link: '' },
-      { id: yeniId(), ad: 'Görev değişikliği / yeni katılımda güncel listeyi düzenle', kategori: 'Liste', tip: 'surekli', aciklama: 'Genel merkez kaynaklı her değişiklikte listeyi ve Drive dosyasını güncelle.', link: '' },
+      { id: yeniId(), ad: 'Ekibe yeni katılan hanımlar listeye eklendi mi? — kontrol et', kategori: 'Liste', tip: 'toplanti', ofset: 1, saat: '21:45', aciklama: 'Drive\'daki güncel listeyi aç, toplantıya yeni gelen hanımları ekle.', link: '' },
+      { id: yeniId(), ad: 'Genel merkez görev değişikliğinde güncel listeyi düzenle', kategori: 'Liste', tip: 'surekli', aciklama: 'Görev değişikliği veya ayrılma olduğunda Drive\'daki listeyi güncelle.', link: '' },
     ],
     toplantilar: [],
-    uyeler: [],
     linkler: [
       { id: yeniId(), ad: 'Tutanaklar', ikon: '📝', url: '' },
       { id: yeniId(), ad: 'Yoklama Dosyası', ikon: '✅', url: '' },
@@ -362,23 +344,9 @@ function varsayilanVeri() {
       { id: yeniId(), ad: 'Güncel Üye Listesi', ikon: '👥', url: '' },
       { id: yeniId(), ad: 'Gündem Arşivi', ikon: '📁', url: '' },
     ],
-    sablonlar: [
-      {
-        id: yeniId(), ad: 'GM grubu toplantı hatırlatması', metin:
-          'Selamünaleyküm hanımlar 🌸\n\n{tarih} {gun} günü saat {saat}\'te {yer} adresinde birim toplantımız var.\n\nKatılamayacak olan hanımların bugün 17.00\'ye kadar bana mazeretlerini iletmesini rica ediyorum.\n\nHepimiz için hayırlı olsun 🤍'
-      },
-      {
-        id: yeniId(), ad: 'Mazeret listesi başlığı', metin:
-          '📌 {tarih} Toplantısı — Katılım Durumu\n\n{mazeretler}'
-      },
-      {
-        id: yeniId(), ad: 'Tutanak üst bilgisi', metin:
-          '{birim}\nTOPLANTI TUTANAĞI\n\nTarih: {tarih}\nSaat: {saat}\nYer: {yer}\nKatılım: {katilim}\n\nGündem:\n{gundem}\n\nKararlar:\n1. \n2. \n3. '
-      },
-    ],
     yapildi: {},   // "isId#YYYY-MM-DD" -> {t: zaman}
     surekli: {},   // isId -> son yapıldı ISO
-    log: [],       // liste değişiklik günlüğü
+    surum: 2,      // veri şeması sürümü (göç için)
   };
 }
 
@@ -398,12 +366,14 @@ function yukle() {
     if (!ham) return varsayilanVeri();
     const v = JSON.parse(ham);
     const t = varsayilanVeri();
-    return {
+    return goc({
       ...t, ...v,
       ayar: { ...t.ayar, ...(v.ayar || {}) },
       yapildi: v.yapildi || {},
       surekli: v.surekli || {},
-    };
+      // Sürüm, varsayılandan DEĞİL kayıtlı veriden okunmalı; yoksa göç hiç çalışmaz.
+      surum: v.surum || 1,
+    });
   } catch (e) {
     console.warn('Veri okunamadı, sıfırdan başlanıyor.', e);
     return varsayilanVeri();
@@ -412,6 +382,45 @@ function yukle() {
 function kaydet() {
   try { localStorage.setItem(ANAHTAR, JSON.stringify(state)); }
   catch (e) { toast('⚠️ Kaydedilemedi: depolama dolu olabilir'); }
+}
+
+/**
+ * Eski kayıtları yeni şemaya taşır. Mevcut ayar/toplantı/işaret verisine dokunmaz.
+ * Sürüm 2: Liste ve Şablonlar sekmeleri kaldırıldı; liste kontrolü rutin işe dönüştü.
+ */
+function goc(v) {
+  if ((v.surum || 1) < 2) {
+    const eskiSurekli = v.isler.find(i => i.tip === 'surekli' && i.kategori === 'Liste');
+    // Toplantı sonrası "yeni katılan hanımlar eklendi mi" kontrolünü ekle (yoksa).
+    if (!v.isler.some(i => i.ad.includes('yeni katılan'))) {
+      v.isler.push({
+        id: yeniId(), ad: 'Ekibe yeni katılan hanımlar listeye eklendi mi? — kontrol et',
+        kategori: 'Liste', tip: 'toplanti', ofset: 1, saat: '21:45',
+        aciklama: 'Drive\'daki güncel listeyi aç, toplantıya yeni gelen hanımları ekle.',
+        link: '', arsiv: false,
+      });
+    }
+    if (eskiSurekli) {
+      eskiSurekli.ad = 'Genel merkez görev değişikliğinde güncel listeyi düzenle';
+      eskiSurekli.aciklama = 'Görev değişikliği veya ayrılma olduğunda Drive\'daki listeyi güncelle.';
+    }
+    // Kişi bazlı katılım verisi artık kullanılmıyor; varsa serbest metne çevir.
+    (v.toplantilar || []).forEach(t => {
+      if (t.mazeretler == null) t.mazeretler = eskiMazeretMetni(t, v.uyeler || []);
+      delete t.katilim; delete t.sebep;
+    });
+    delete v.uyeler; delete v.sablonlar; delete v.log;
+    v.surum = 2;
+  }
+  return v;
+}
+
+// Sürüm 1'deki işaretli katılımı okunur metne dönüştürür (veri kaybolmasın).
+function eskiMazeretMetni(t, uyeler) {
+  const k = t.katilim || {}, s = t.sebep || {};
+  const satir = uyeler.filter(u => k[u.id] === 'mazeret')
+    .map(u => `${u.ad}${s[u.id] ? ' — ' + s[u.id] : ''}`);
+  return satir.join('\n');
 }
 
 /* ---------------- Görev üretici (tekrar motoru) ---------------- */
@@ -507,8 +516,8 @@ let takvimAy = new Date().getMonth();
 let takvimYil = new Date().getFullYear();
 
 const gorunumler = {
-  bugun: gorunumBugun, takvim: gorunumTakvim, rutin: gorunumRutin, toplanti: gorunumToplanti,
-  liste: gorunumListe, sablon: gorunumSablon, drive: gorunumDrive, ayar: gorunumAyar,
+  bugun: gorunumBugun, takvim: gorunumTakvim, rutin: gorunumRutin,
+  toplanti: gorunumToplanti, drive: gorunumDrive, ayar: gorunumAyar,
 };
 
 function ciz() {
@@ -825,10 +834,8 @@ function gorunumToplanti() {
 }
 
 function toplantiKarti(t) {
-  const k = t.katilim || {};
-  const aktifUye = state.uyeler.filter(u => u.durum !== 'ayrildi');
-  const say = (v) => aktifUye.filter(u => k[u.id] === v).length;
   const gundem = (t.gundem || []).filter(Boolean);
+  const mazeretSayisi = (t.mazeretler || '').split('\n').filter(s => s.trim()).length;
   return `<div class="kart">
     <div class="kart-bas">
       <h2>${kisaTarih(t.tarih)} · ${GUN_ADLARI[tarihNesnesi(t.tarih).getDay()]} <span class="sayi">${kacik(t.saat || state.ayar.toplantiSaat)}</span></h2>
@@ -840,25 +847,16 @@ function toplantiKarti(t) {
     <div class="kart-ic">
       ${t.yer ? `<p style="margin:0 0 10px"><b>Yer:</b> ${kacik(t.yer)}</p>` : ''}
       <div class="rozet-sira" style="margin-bottom:12px">
-        <span>✅ Katılan <b>${say('katildi')}</b></span><span>🟡 Mazeret <b>${say('mazeret')}</b></span>
-        <span>❌ Katılmayan <b>${say('katilmadi')}</b></span><span>👥 Toplam <b>${aktifUye.length}</b></span>
+        <span>🟡 Mazeret bildiren <b>${mazeretSayisi}</b></span>
+        ${t.katilimNot ? `<span>✅ Katılım <b>${kacik(t.katilimNot)}</b></span>` : ''}
       </div>
       <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Gündem maddeleri</h4>
       ${gundem.length ? `<ol style="margin:0 0 14px;padding-left:20px">${gundem.map(g => `<li>${kacik(g)}</li>`).join('')}</ol>`
       : `<p class="ipucu" style="margin:0 0 14px">Gündem girilmemiş — Düzenle ile 3 maddeyi yaz.</p>`}
-      <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Katılım</h4>
-      ${aktifUye.length ? aktifUye.map(u => `
-        <div class="katilim-satir">
-          <span class="ad">${kacik(u.ad)} ${u.gorev ? `<span class="gorev">· ${kacik(u.gorev)}</span>` : ''}</span>
-          <div class="secenek">
-            <button class="sec-katildi ${k[u.id] === 'katildi' ? 'aktif' : ''}" data-act="katilim" data-t="${t.id}" data-u="${u.id}" data-v="katildi">Katıldı</button>
-            <button class="sec-mazeret ${k[u.id] === 'mazeret' ? 'aktif' : ''}" data-act="katilim" data-t="${t.id}" data-u="${u.id}" data-v="mazeret">Mazeret</button>
-            <button class="sec-yok ${k[u.id] === 'katilmadi' ? 'aktif' : ''}" data-act="katilim" data-t="${t.id}" data-u="${u.id}" data-v="katilmadi">Gelmedi</button>
-          </div>
-          <input type="text" style="max-width:190px" placeholder="mazeret sebebi" value="${kacik((t.sebep || {})[u.id] || '')}"
-            data-act-input="sebep" data-t="${t.id}" data-u="${u.id}">
-        </div>`).join('')
-      : `<p class="ipucu">Önce <b>Liste</b> sekmesinden üyeleri ekle, katılım burada işaretlenebilir.</p>`}
+      <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Mazeretler</h4>
+      <textarea data-act-input="mazeretler" data-t="${t.id}" style="min-height:78px"
+        placeholder="Her satıra bir kişi:&#10;Ayşe Y. — ders programı&#10;Zeynep K. — sınav">${kacik(t.mazeretler || '')}</textarea>
+      <p class="ipucu" style="margin:5px 0 0">Yazdıkça kaydedilir. <b>📋 Mazeret listesi</b> butonu bunu tarih başlığıyla kopyalar.</p>
       <div class="form-satir" style="margin-top:14px">
         ${t.tutanakLink ? `<a class="btn sm gri" href="${kacik(t.tutanakLink)}" target="_blank" rel="noopener">📝 Tutanak dosyası</a>` : ''}
         ${driveUrl('Arşiv') ? `<a class="btn sm gri" href="${kacik(driveUrl('Arşiv'))}" target="_blank" rel="noopener">📁 Arşiv klasörü</a>` : ''}
@@ -881,8 +879,12 @@ function toplantiFormuAc(id) {
     <div class="form-satir"><div class="alan"><label>1. gündem maddesi</label><input type="text" id="t_g1" value="${kacik(g[0] || '')}"></div></div>
     <div class="form-satir"><div class="alan"><label>2. gündem maddesi</label><input type="text" id="t_g2" value="${kacik(g[1] || '')}"></div></div>
     <div class="form-satir"><div class="alan"><label>3. gündem maddesi</label><input type="text" id="t_g3" value="${kacik(g[2] || '')}"></div></div>
-    <div class="form-satir"><div class="alan"><label>Tutanak dosya linki</label>
-      <input type="url" id="t_tutanak" value="${kacik(t.tutanakLink || '')}" placeholder="https://docs.google.com/..."></div></div>
+    <div class="form-satir">
+      <div class="alan"><label>Katılım notu (isteğe bağlı)</label>
+        <input type="text" id="t_katilimNot" value="${kacik(t.katilimNot || '')}" placeholder="Örn: 14/18"></div>
+      <div class="alan"><label>Tutanak dosya linki</label>
+        <input type="url" id="t_tutanak" value="${kacik(t.tutanakLink || '')}" placeholder="https://docs.google.com/..."></div>
+    </div>
     <div class="form-satir"><div class="alan"><label>Notlar</label><textarea id="t_notlar">${kacik(t.notlar || '')}</textarea></div></div>`,
     `${id ? `<button class="btn tehlike" data-act="toplanti-sil" data-id="${id}">Sil</button>` : ''}
      <button class="btn gri" data-act="modal-kapat">Vazgeç</button>
@@ -894,10 +896,11 @@ function toplantiKaydet(id) {
   const kayit = {
     tarih: al('t_tarih') || bugunISO(), saat: al('t_saat'), yer: al('t_yer'),
     gundem: [al('t_g1'), al('t_g2'), al('t_g3')], tutanakLink: al('t_tutanak'), notlar: al('t_notlar'),
+    katilimNot: al('t_katilimNot'),
   };
   const i = state.toplantilar.findIndex(x => x.id === id);
   if (i >= 0) state.toplantilar[i] = { ...state.toplantilar[i], ...kayit };
-  else state.toplantilar.push({ id: yeniId(), katilim: {}, sebep: {}, ...kayit });
+  else state.toplantilar.push({ id: yeniId(), mazeretler: '', ...kayit });
   kaydet(); modalKapat(); ciz(); toast('✔️ Toplantı kaydedildi');
 }
 
@@ -937,7 +940,7 @@ function donemKaydet() {
   let n = 0;
   for (let g = bas; gunFarki(g, bit) >= 0; g = gunEkle(g, 7 * aralik)) {
     if (mevcut.has(g)) continue;
-    state.toplantilar.push({ id: yeniId(), tarih: g, saat, yer, gundem: ['', '', ''], katilim: {}, sebep: {}, notlar: '', tutanakLink: '' });
+    state.toplantilar.push({ id: yeniId(), tarih: g, saat, yer, gundem: ['', '', ''], mazeretler: '', katilimNot: '', notlar: '', tutanakLink: '' });
     n++;
   }
   state.ayar.toplantiGunu = gun; state.ayar.toplantiSaat = saat; state.ayar.toplantiYer = yer;
@@ -945,20 +948,15 @@ function donemKaydet() {
   toast(n ? `✔️ ${n} toplantı oluşturuldu` : 'Yeni tarih eklenmedi (hepsi zaten kayıtlı)');
 }
 
+// Toplantı kartındaki serbest metni, gruba iletilecek biçime çevirir.
 function mazeretMetni(id) {
   const t = state.toplantilar.find(x => x.id === id);
   if (!t) return '';
-  const k = t.katilim || {}, s = t.sebep || {};
-  const u = state.uyeler.filter(x => x.durum !== 'ayrildi');
-  const grup = (v) => u.filter(x => k[x.id] === v);
-  const yaz = (baslik, liste, sebepli) => liste.length
-    ? `${baslik} (${liste.length}):\n` + liste.map((x, i) =>
-      `${i + 1}. ${x.ad}${sebepli && s[x.id] ? ' — ' + s[x.id] : ''}`).join('\n') + '\n\n' : '';
-  return `📌 ${kisaTarih(t.tarih)} Toplantısı — Katılım Durumu\n\n`
-    + yaz('🟡 Mazeret bildiren', grup('mazeret'), true)
-    + yaz('❌ Katılmayan', grup('katilmadi'), false)
-    + yaz('✅ Katılan', grup('katildi'), false)
-    + `👥 Toplam kayıtlı: ${u.length}`;
+  const satir = (t.mazeretler || '').split('\n').map(s => s.trim()).filter(Boolean);
+  if (!satir.length) return '';
+  return `📌 ${kisaTarih(t.tarih)} Toplantısı — Mazeret Bildirenler (${satir.length})\n\n`
+    + satir.map((s, i) => `${i + 1}. ${s}`).join('\n')
+    + (t.katilimNot ? `\n\n✅ Katılım: ${t.katilimNot}` : '');
 }
 
 function gundemYazdir(id) {
@@ -973,139 +971,6 @@ function gundemYazdir(id) {
     </div>
     <ol>${g.map(x => `<li>${kacik(x)}</li>`).join('')}</ol>
     <div class="p-alt">Katılan: ............ &nbsp;&nbsp; Mazeret: ............ &nbsp;&nbsp; Sekreterya imza: ............</div>`);
-}
-
-/* ================================================================
-   GÖRÜNÜM: LİSTE (üyeler + değişiklik günlüğü)
-   ================================================================ */
-function gorunumListe() {
-  const u = state.uyeler;
-  const aktif = u.filter(x => x.durum !== 'ayrildi');
-  return `
-  <div class="kart">
-    <div class="kart-bas"><h2>👥 Güncel liste <span class="sayi">${aktif.length} aktif</span></h2>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn sm gri" data-act="liste-kopya">📋 Listeyi kopyala</button>
-        <button class="btn sm" data-act="uye-duzenle" data-id="">+ Kişi ekle</button>
-      </div></div>
-    <div class="kart-ic sifir">
-      <table><thead><tr><th>Ad Soyad</th><th>Görev</th><th>Telefon</th><th>Durum</th><th class="sag">İşlem</th></tr></thead>
-      <tbody>${u.length ? u.map(x => `<tr>
-        <td><b>${kacik(x.ad)}</b>${x.not ? `<div class="ipucu">${kacik(x.not)}</div>` : ''}</td>
-        <td>${kacik(x.gorev || '—')}</td>
-        <td>${x.tel ? `<a href="tel:${kacik(x.tel)}">${kacik(x.tel)}</a>` : '—'}</td>
-        <td><span class="durum ${x.durum === 'ayrildi' ? 'ayrildi' : 'aktif'}">${x.durum === 'ayrildi' ? 'Ayrıldı' : 'Aktif'}</span></td>
-        <td class="sag"><button class="btn sm gri" data-act="uye-duzenle" data-id="${x.id}">Düzenle</button></td></tr>`).join('')
-      : `<tr><td colspan="5"><div class="bos">Henüz kimse eklenmedi. <b>+ Kişi ekle</b> ile başla.</div></td></tr>`}</tbody></table>
-    </div></div>
-
-  <div class="kart">
-    <div class="kart-bas"><h2>🧾 Değişiklik günlüğü <span class="sayi">${state.log.length}</span></h2>
-      <button class="btn sm gri" data-act="log-ekle">+ Not ekle</button></div>
-    <div class="kart-ic sifir">
-      ${state.log.length ? `<ul class="is-liste">${[...state.log].reverse().slice(0, 40).map(l => `<li class="is">
-        <div class="is-govde"><div class="is-ad" style="font-weight:500">${kacik(l.metin)}</div>
-        <div class="is-alt"><span class="etiket saat">${kisaTarih(l.tarih)}</span></div></div></li>`).join('')}</ul>`
-      : `<div class="bos">Genel merkez görev değişikliği, yeni katılım vb. her düzenlemeyi buraya not et — yıl sonu raporunda işine yarar.</div>`}
-    </div></div>`;
-}
-
-function uyeFormuAc(id) {
-  const x = state.uyeler.find(u => u.id === id) || { ad: '', gorev: '', tel: '', durum: 'aktif', not: '' };
-  modalAc(id ? 'Kişiyi düzenle' : 'Kişi ekle', `
-    <div class="form-satir"><div class="alan"><label>Ad Soyad</label><input type="text" id="u_ad" value="${kacik(x.ad)}"></div></div>
-    <div class="form-satir">
-      <div class="alan"><label>Görev</label><input type="text" id="u_gorev" value="${kacik(x.gorev || '')}" placeholder="Örn: Birim Başkanı"></div>
-      <div class="alan"><label>Telefon</label><input type="text" id="u_tel" value="${kacik(x.tel || '')}" placeholder="05.."></div>
-    </div>
-    <div class="form-satir">
-      <div class="alan"><label>Durum</label><select id="u_durum">
-        <option value="aktif" ${x.durum !== 'ayrildi' ? 'selected' : ''}>Aktif</option>
-        <option value="ayrildi" ${x.durum === 'ayrildi' ? 'selected' : ''}>Ayrıldı</option></select></div>
-      <div class="alan"><label>Not</label><input type="text" id="u_not" value="${kacik(x.not || '')}"></div>
-    </div>`,
-    `${id ? `<button class="btn tehlike" data-act="uye-sil" data-id="${id}">Sil</button>` : ''}
-     <button class="btn gri" data-act="modal-kapat">Vazgeç</button>
-     <button class="btn" data-act="uye-kaydet" data-id="${id || ''}">Kaydet</button>`);
-}
-
-function uyeKaydet(id) {
-  const al = (x) => document.getElementById(x)?.value?.trim() ?? '';
-  const ad = al('u_ad');
-  if (!ad) { toast('⚠️ Ad boş olamaz'); return; }
-  const kayit = { ad, gorev: al('u_gorev'), tel: al('u_tel'), durum: al('u_durum'), not: al('u_not') };
-  const i = state.uyeler.findIndex(u => u.id === id);
-  if (i >= 0) {
-    const eski = state.uyeler[i];
-    if (eski.gorev !== kayit.gorev) logEkle(`${ad}: görev "${eski.gorev || '—'}" → "${kayit.gorev || '—'}" olarak güncellendi.`);
-    if (eski.durum !== kayit.durum) logEkle(`${ad}: durum "${kayit.durum === 'ayrildi' ? 'Ayrıldı' : 'Aktif'}" olarak güncellendi.`);
-    state.uyeler[i] = { ...eski, ...kayit };
-  } else {
-    state.uyeler.push({ id: yeniId(), ...kayit });
-    logEkle(`${ad} listeye eklendi${kayit.gorev ? ' (' + kayit.gorev + ')' : ''}.`);
-  }
-  kaydet(); modalKapat(); ciz(); toast('✔️ Kaydedildi');
-}
-function logEkle(metin) { state.log.push({ tarih: bugunISO(), metin }); }
-
-function listeMetni() {
-  const u = state.uyeler.filter(x => x.durum !== 'ayrildi');
-  return `📋 ${state.ayar.birim} — Güncel Liste (${kisaTarih(bugunISO())})\n\n`
-    + u.map((x, i) => `${i + 1}. ${x.ad}${x.gorev ? ' — ' + x.gorev : ''}${x.tel ? ' — ' + x.tel : ''}`).join('\n')
-    + `\n\nToplam: ${u.length} kişi`;
-}
-
-/* ================================================================
-   GÖRÜNÜM: ŞABLONLAR
-   ================================================================ */
-function gorunumSablon() {
-  const bg = bugunISO();
-  const y = state.toplantilar.filter(t => t.tarih >= bg).sort((a, b) => a.tarih.localeCompare(b.tarih))[0];
-  return `
-  <div class="serit bilgi">💡 <div>Metinlerdeki <b>{tarih} {saat} {yer} {gun} {birim} {mazeretler} {gundem} {katilim}</b> yerine sıradaki toplantının bilgileri otomatik yazılır. Kopyala → WhatsApp'a yapıştır.</div></div>
-  ${y ? `<p class="ipucu" style="margin:-6px 0 14px">Kullanılan toplantı: <b>${uzunTarih(y.tarih)} · ${kacik(y.saat || state.ayar.toplantiSaat)}</b></p>`
-      : `<div class="serit uyari">⚠️ <div>Yaklaşan toplantı yok; yer tutucular boş kalır.</div></div>`}
-  <div class="kart"><div class="kart-bas"><h2>✉️ Hazır mesajlar <span class="sayi">${state.sablonlar.length}</span></h2>
-    <button class="btn sm" data-act="sablon-duzenle" data-id="">+ Yeni şablon</button></div>
-  <div class="kart-ic sifir">${state.sablonlar.map(s => `<div style="padding:14px 16px;border-bottom:1px solid var(--cizgi)">
-    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
-      <b>${kacik(s.ad)}</b>
-      <div style="display:flex;gap:6px">
-        <button class="btn sm" data-act="sablon-kopya" data-id="${s.id}">📋 Kopyala</button>
-        <button class="btn sm gri" data-act="sablon-duzenle" data-id="${s.id}">Düzenle</button>
-      </div></div>
-    <pre style="margin:0;white-space:pre-wrap;font-family:inherit;font-size:13.5px;color:var(--soluk);background:var(--zemin);padding:10px 12px;border-radius:9px">${kacik(sablonDoldur(s.metin))}</pre>
-  </div>`).join('')}</div></div>`;
-}
-
-function sablonDoldur(metin) {
-  const bg = bugunISO();
-  const t = state.toplantilar.filter(x => x.tarih >= bg).sort((a, b) => a.tarih.localeCompare(b.tarih))[0];
-  const u = state.uyeler.filter(x => x.durum !== 'ayrildi');
-  const k = t?.katilim || {};
-  const deger = {
-    tarih: t ? kisaTarih(t.tarih) : '…',
-    gun: t ? GUN_ADLARI[tarihNesnesi(t.tarih).getDay()] : '…',
-    saat: t ? (t.saat || state.ayar.toplantiSaat) : state.ayar.toplantiSaat,
-    yer: (t?.yer || state.ayar.toplantiYer) || '…',
-    birim: state.ayar.birim,
-    gundem: t ? ((t.gundem || []).filter(Boolean).map((g, i) => `${i + 1}. ${g}`).join('\n') || '…') : '…',
-    katilim: t ? `${u.filter(x => k[x.id] === 'katildi').length}/${u.length}` : '…',
-    mazeretler: t ? mazeretMetni(t.id).split('\n').slice(2).join('\n').trim() : '…',
-  };
-  return metin.replace(/\{(\w+)\}/g, (m, a) => deger[a] ?? m);
-}
-
-function sablonFormuAc(id) {
-  const s = state.sablonlar.find(x => x.id === id) || { ad: '', metin: '' };
-  modalAc(id ? 'Şablonu düzenle' : 'Yeni şablon', `
-    <div class="form-satir"><div class="alan"><label>Şablon adı</label><input type="text" id="s_ad" value="${kacik(s.ad)}"></div></div>
-    <div class="form-satir"><div class="alan"><label>Metin</label>
-      <textarea id="s_metin" style="min-height:180px">${kacik(s.metin)}</textarea>
-      <span class="ipucu">Yer tutucular: {tarih} {gun} {saat} {yer} {birim} {gundem} {katilim} {mazeretler}</span></div></div>`,
-    `${id ? `<button class="btn tehlike" data-act="sablon-sil" data-id="${id}">Sil</button>` : ''}
-     <button class="btn gri" data-act="modal-kapat">Vazgeç</button>
-     <button class="btn" data-act="sablon-kaydet" data-id="${id || ''}">Kaydet</button>`);
 }
 
 /* ================================================================
@@ -1177,9 +1042,8 @@ function gorunumAyar() {
       <div class="rozet-sira">
         <span>İş tanımı <b>${state.isler.filter(i => !i.arsiv).length}</b></span>
         <span>Toplantı <b>${state.toplantilar.length}</b></span>
-        <span>Kişi <b>${state.uyeler.length}</b></span>
+        <span>Drive bağlantısı <b>${state.linkler.filter(l => l.url).length}/${state.linkler.length}</b></span>
         <span>Tamamlanan iş <b>${Object.keys(state.yapildi).length}</b></span>
-        <span>Günlük kaydı <b>${state.log.length}</b></span>
       </div>
     </div></div>`;
 }
@@ -1247,11 +1111,11 @@ document.body.addEventListener('change', e => {
   if (e.target.id === 'yedekDosya' && e.target.files[0]) yedekYukle(e.target.files[0]);
 });
 
-// Katılım sebebi yazımı
+// Mazeret metni yazıldıkça kaydet (yeniden çizmeden — imleç kaçmasın)
 document.body.addEventListener('input', e => {
-  const s = e.target.closest('[data-act-input="sebep"]'); if (!s) return;
+  const s = e.target.closest('[data-act-input="mazeretler"]'); if (!s) return;
   const t = state.toplantilar.find(x => x.id === s.dataset.t); if (!t) return;
-  t.sebep = t.sebep || {}; t.sebep[s.dataset.u] = e.target.value; kaydet();
+  t.mazeretler = e.target.value; kaydet();
 });
 
 document.body.addEventListener('click', e => {
@@ -1296,47 +1160,12 @@ document.body.addEventListener('click', e => {
     case 'toplanti-ac': git('toplanti'); break;
     case 'donem-olustur': donemOlusturAc(); break;
     case 'donem-kaydet': donemKaydet(); break;
-    case 'katilim': {
-      const t = state.toplantilar.find(x => x.id === b.dataset.t); if (!t) return;
-      t.katilim = t.katilim || {};
-      t.katilim[b.dataset.u] = t.katilim[b.dataset.u] === b.dataset.v ? '' : b.dataset.v;
-      kaydet(); ciz(); break;
+    case 'mazeret-kopya': {
+      const m = mazeretMetni(id);
+      if (m) kopyala(m); else toast('⚠️ Önce Mazeretler alanına yaz');
+      break;
     }
-    case 'mazeret-kopya': kopyala(mazeretMetni(id)); break;
     case 'gundem-yazdir': gundemYazdir(id); break;
-
-    case 'uye-duzenle': uyeFormuAc(id); break;
-    case 'uye-kaydet': uyeKaydet(id); break;
-    case 'uye-sil': {
-      const u = state.uyeler.find(x => x.id === id);
-      if (u && confirm(`${u.ad} listeden tamamen silinsin mi? (Geçmiş toplantı kayıtlarından da düşer — "Ayrıldı" işaretlemek daha güvenli.)`)) {
-        state.uyeler = state.uyeler.filter(x => x.id !== id);
-        logEkle(`${u.ad} listeden silindi.`); kaydet(); modalKapat(); ciz(); toast('🗑️ Silindi');
-      } break;
-    }
-    case 'liste-kopya': kopyala(listeMetni()); break;
-    case 'log-ekle': {
-      const m = prompt('Değişiklik notu (örn: "Ayşe Y. birim başkan yardımcısı olarak atandı"):');
-      if (m && m.trim()) { logEkle(m.trim()); kaydet(); ciz(); toast('✔️ Not eklendi'); } break;
-    }
-
-    case 'sablon-duzenle': sablonFormuAc(id); break;
-    case 'sablon-kaydet': {
-      const ad = document.getElementById('s_ad').value.trim(), metin = document.getElementById('s_metin').value;
-      if (!ad) { toast('⚠️ Ad boş olamaz'); return; }
-      const i = state.sablonlar.findIndex(x => x.id === id);
-      if (i >= 0) state.sablonlar[i] = { ...state.sablonlar[i], ad, metin };
-      else state.sablonlar.push({ id: yeniId(), ad, metin });
-      kaydet(); modalKapat(); ciz(); toast('✔️ Kaydedildi'); break;
-    }
-    case 'sablon-kopya': {
-      const s = state.sablonlar.find(x => x.id === id); if (s) kopyala(sablonDoldur(s.metin)); break;
-    }
-    case 'sablon-sil':
-      if (confirm('Şablon silinsin mi?')) {
-        state.sablonlar = state.sablonlar.filter(x => x.id !== id);
-        kaydet(); modalKapat(); ciz();
-      } break;
 
     case 'link-duzenle': linkFormuAc(id); break;
     case 'link-kaydet': {
@@ -1373,6 +1202,7 @@ document.getElementById('bildirimAc').addEventListener('click', bildirimIzin);
 
 /* ---------------- Başlat ---------------- */
 ciz();
+if (depoVar) kaydet();   // göç sonucunu hemen sabitle
 setInterval(saatKontrol, 60000);
 saatKontrol();
 

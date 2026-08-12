@@ -24,25 +24,24 @@ Chrome veya Brave kullan (`Paneli-Ac.command` bunu zaten kendisi seçer).
 ## İlk 10 dakika (sırayla yap)
 1. **Ayarlar** → birim adı, olağan toplantı günü, saat, yer → Kaydet.
 2. **Toplantılar** → *Dönem toplantılarını oluştur* → dönem başı/sonu tarihini ver → tüm haftalar tek seferde eklenir.
-3. **Liste** → *+ Kişi ekle* ile hanımları gir (ad, görev, telefon).
-4. **Drive** → her kutuya ilgili klasör/dosya linkini yapıştır (Drive'da klasöre gir, adres çubuğundaki adresi kopyala).
-5. **Bugün** → bundan sonra her gün buradan başla.
+3. **Drive** → her kutuya ilgili klasör/dosya linkini yapıştır (Drive'da klasöre gir, adres çubuğundaki adresi kopyala). Üye listesi Drive'da tutulur, panelde ayrı liste yok.
+4. **Bugün** → bundan sonra her gün buradan başla.
 
 ## Mantık
 - **Toplantıya bağlı** işler her toplantı tarihine göre kendiliğinden oluşur; her hafta elle yazmıyorsun.
   - Toplantıdan 1 gün önce → gündem çıktısı
   - Toplantı günü 12:00 → GM grubuna hatırlatma
   - Toplantı günü 17:00 → mazeret listesi
-  - Toplantıdan 1 gün sonra → tutanak + yoklama güncelleme
+  - Toplantıdan 1 gün sonra → tutanak + yoklama güncelleme + **yeni katılan hanımlar listeye eklendi mi kontrolü**
 - **Aylık** işler ayın belirli gününde çıkar (ana birim hatırlatması ayın 21'i, rapor teslimi 28'i).
-- **Sürekli takip** işleri tarihsizdir (görev değişikliği / yeni katılımda liste güncelleme gibi).
+- **Sürekli takip** işleri tarihsizdir (genel merkez görev değişikliğinde liste düzenleme gibi).
 
 ## Günlük akış
 - Sabah **Bugün** sekmesini aç → geciken + bugünkü işleri gör.
 - İşi yapınca soldaki kutuyu işaretle.
 - İşin yanındaki **📁 Drive** butonu ilgili klasörü doğrudan açar.
-- **Şablonlar** → mesajı *Kopyala* → WhatsApp'a yapıştır (tarih/saat/yer otomatik dolar).
-- Toplantı akşamı **Toplantılar** → katılımı işaretle → *Mazeret listesi* ile hazır metni kopyala.
+- Toplantı günü **Toplantılar** → kartın **Mazeretler** alanına her satıra bir kişi yaz → **📋 Mazeret listesi**
+  ile tarih başlıklı hazır metni kopyala, gruba yapıştır.
 - Toplantı öncesi **Gündem çıktısı** → yazıcıya/PDF'e gönderir (3 madde + imza satırı).
 
 ## Önemli: yedek
@@ -57,4 +56,4 @@ Telefon/kapalı bilgisayar hatırlatması için işleri Google Takvim'e de yaz (
 ## Dosyalar
 - `index.html` — sayfa iskeleti
 - `styles.css` — görünüm
-- `app.js` — tüm mantık (tekrar motoru, toplantı/liste/şablon)
+- `app.js` — tüm mantık (tekrar motoru, toplantı yönetimi, Drive kısayolları, yedekleme)

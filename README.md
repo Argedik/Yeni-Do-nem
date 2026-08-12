@@ -7,10 +7,10 @@ Kurulum, sunucu, hesap gerektirmez — tarayıcıda açılır, veriler o tarayı
 - **Rutin işleri kendisi üretir.** Toplantı tarihlerini bir kez girersin; hatırlatma mesajı,
   gündem çıktısı, mazeret listesi, tutanak ve yoklama işleri her toplantı için otomatik oluşur.
 - **Aylık işleri hatırlatır.** Ana birime rapor hatırlatması ve rapor teslimi ayın belirli gününde düşer.
-- **Toplantı yönetimi.** 3 gündem maddesi, yazdırılabilir gündem çıktısı, kişi bazlı katılım/mazeret
-  takibi ve tek tuşla kopyalanan mazeret listesi.
-- **Güncel liste.** Üye kadrosu, görev değişikliği ve yeni katılımların otomatik değişiklik günlüğü.
-- **Hazır mesajlar.** Tarih/saat/yer bilgisi otomatik dolan WhatsApp şablonları.
+- **Toplantı yönetimi.** 3 gündem maddesi, yazdırılabilir gündem çıktısı, mazeret alanı ve
+  tek tuşla kopyalanan tarih başlıklı mazeret listesi.
+- **Liste kontrolü unutulmaz.** Ekibe yeni katılan hanımların listeye eklenip eklenmediği her
+  toplantı sonrası rutin iş olarak düşer; listenin kendisi Drive'da tutulur.
 - **Drive kısayolları.** Klasör linklerini bir kez yapıştırırsın; ilgili işin yanındaki buton
   doğrudan o dosyayı açar.
 
@@ -26,7 +26,7 @@ Ayrıntılı anlatım: [KULLANIM.md](KULLANIM.md)
 |---|---|
 | `index.html` | Sayfa iskeleti |
 | `styles.css` | Görünüm |
-| `app.js` | Tüm mantık: tekrar motoru, toplantı/liste/şablon yönetimi, yedekleme |
+| `app.js` | Tüm mantık: tekrar motoru, toplantı yönetimi, Drive kısayolları, yedekleme |
 | `Sekreterya.html` | Yukarıdaki üçünün tek dosyada birleştirilmiş hali (üretilen dosya) |
 
 ## Teknik
