@@ -9,8 +9,8 @@ Kurulum, sunucu, hesap gerektirmez — tarayıcıda açılır, veriler o tarayı
 - **Aylık işleri hatırlatır.** Ana birime rapor hatırlatması ve rapor teslimi ayın belirli gününde düşer.
 - **Toplantı yönetimi.** 3 gündem maddesi, yazdırılabilir gündem çıktısı, mazeret alanı ve
   tek tuşla kopyalanan tarih başlıklı mazeret listesi.
-- **Liste kontrolü unutulmaz.** Ekibe yeni katılan hanımların listeye eklenip eklenmediği her
-  toplantı sonrası rutin iş olarak düşer; listenin kendisi Drive'da tutulur.
+- **Liste kontrolü unutulmaz.** Yeni katılım ve görev değişikliğinde listeyi güncelleme,
+  tarihsiz "sürekli takip" maddesi olarak durur; listenin kendisi Drive'da tutulur.
 - **Drive kısayolları.** Klasör linklerini bir kez yapıştırırsın; ilgili işin yanındaki buton
   doğrudan o dosyayı açar.
 
