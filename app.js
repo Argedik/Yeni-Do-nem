@@ -51,7 +51,7 @@ function varsayilanVeri() {
     },
     isler: [
       { id: yeniId(), ad: 'Toplantı hatırlatma mesajını GM grubuna ilet', kategori: 'İletişim', tip: 'toplanti', ofsetler: [-1, 0], saat: '12:00', aciklama: '', link: '' },
-      { id: yeniId(), ad: '3 adet gündem maddesi + 1 adet son tutanak çıktısı al', kategori: 'Toplantı', tip: 'toplanti', ofsetler: [0], saat: '20:00', aciklama: 'Toplantı kartında: "Gündem çıktısı" ile 3 madde, "Son tutanak" ile önceki toplantının tutanağı.', link: '' },
+      { id: yeniId(), ad: '3 adet gündem maddesi + 1 adet son tutanak çıktısı al', kategori: 'Toplantı', tip: 'toplanti', ofsetler: [0], saat: '17:00', aciklama: 'Toplantı kartında: "Gündem çıktısı" ile 3 madde, "Son tutanak" ile önceki toplantının tutanağı.', link: '' },
       { id: yeniId(), ad: 'Tutanağı hazırla ve Drive dosyasına ekle', kategori: 'Arşiv', tip: 'toplanti', ofsetler: [1], saat: '21:00', aciklama: '', link: '' },
       { id: yeniId(), ad: 'Yoklamayı Drive dosyasında güncelle', kategori: 'Arşiv', tip: 'toplanti', ofsetler: [1], saat: '21:30', aciklama: '', link: '' },
       { id: yeniId(), ad: 'Ana birime aylık rapor hatırlatması yap', kategori: 'Rapor', tip: 'aylik', ayGunu: 21, saat: '10:00', aciklama: 'Rapor tesliminden 1 hafta önce ana birimi uyar.', link: '' },
@@ -69,7 +69,7 @@ function varsayilanVeri() {
     ],
     yapildi: {},   // "isId#YYYY-MM-DD" -> {t: zaman}
     surekli: {},   // isId -> son yapıldı ISO
-    surum: 7,      // veri şeması sürümü (göç için)
+    surum: 8,      // veri şeması sürümü (göç için)
   };
 }
 
@@ -176,6 +176,12 @@ function goc(v) {
     const g = v.isler.find(i => i.ad === '3 adet gündem maddesi + 1 adet son tutanak çıktısı al');
     if (g) g.ofsetler = [0];
     v.surum = 7;
+  }
+  if (v.surum < 8) {
+    // Çıktı saati toplantı saatinden (19:00) önceye çekildi.
+    const g = v.isler.find(i => i.ad === '3 adet gündem maddesi + 1 adet son tutanak çıktısı al');
+    if (g && g.saat === '20:00') g.saat = '17:00';
+    v.surum = 8;
   }
   return v;
 }
