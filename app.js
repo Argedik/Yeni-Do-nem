@@ -64,7 +64,7 @@ function varsayilanVeri() {
       baslangic: bugunISO(),    // bu tarihten öncesi "geciken" sayılmaz
     },
     isler: [
-      { id: yeniId(), ad: `${GM_HATIRLATMA} (${ofsetGunAdi(-1, 3)})`, kategori: 'İletişim', tip: 'toplanti', ofsetler: [-1], saat: '12:00', aciklama: '', link: '' },
+      { id: yeniId(), ad: 'Gündem maddelerini gruba ilet ve anket aç', kategori: 'İletişim', tip: 'toplanti', ofsetler: [-1], saat: '12:00', aciklama: '', link: '' },
       { id: yeniId(), ad: `${GM_HATIRLATMA} (${ofsetGunAdi(0, 3)})`, kategori: 'İletişim', tip: 'toplanti', ofsetler: [0], saat: '12:00', aciklama: '', link: '' },
       { id: yeniId(), ad: '3 adet gündem maddesi + 1 adet son tutanak çıktısı al', kategori: 'Toplantı', tip: 'toplanti', ofsetler: [0], saat: '17:00', aciklama: 'Toplantı kartında: "Gündem çıktısı" ile 3 madde, "Son tutanak" ile önceki toplantının tutanağı.', link: '' },
       { id: yeniId(), ad: 'Tutanağı hazırla ve Drive dosyasına ekle', kategori: 'Arşiv', tip: 'toplanti', ofsetler: [1], saat: '21:00', aciklama: '', link: '' },
@@ -81,7 +81,7 @@ function varsayilanVeri() {
     ],
     yapildi: {},   // "isId#YYYY-MM-DD" -> {t: zaman}
     surekli: {},   // isId -> son yapıldı ISO
-    surum: 13,     // veri şeması sürümü (göç için)
+    surum: 14,     // veri şeması sürümü (göç için)
   };
 }
 
@@ -244,6 +244,13 @@ function goc(v) {
     v.isler = v.isler.filter(i => !cikar.includes(i));
     cikar.forEach(i => { if (v.surekli) delete v.surekli[i.id]; });
     v.surum = 13;
+  }
+  if (v.surum < 14) {
+    // Toplantıdan bir gün önceki GM işi: gündem maddeleri + anket.
+    const gm = v.isler.find(i => i.tip === 'toplanti' && i.ad.startsWith(GM_HATIRLATMA)
+      && Array.isArray(i.ofsetler) && i.ofsetler.length === 1 && i.ofsetler[0] === -1);
+    if (gm) gm.ad = 'Gündem maddelerini gruba ilet ve anket aç';
+    v.surum = 14;
   }
   return v;
 }
