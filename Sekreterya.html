@@ -383,11 +383,10 @@ function varsayilanVeri() {
       { id: yeniId(), ad: 'Yoklama Dosyası', ikon: '✅', url: '' },
       { id: yeniId(), ad: 'Aylık Raporlar', ikon: '📊', url: '' },
       { id: yeniId(), ad: 'Güncel Üye Listesi', ikon: '👥', url: '' },
-      { id: yeniId(), ad: 'Gündem Arşivi', ikon: '📁', url: '' },
     ],
     yapildi: {},   // "isId#YYYY-MM-DD" -> {t: zaman}
     surekli: {},   // isId -> son yapıldı ISO
-    surum: 11,     // veri şeması sürümü (göç için)
+    surum: 12,     // veri şeması sürümü (göç için)
   };
 }
 
@@ -538,6 +537,11 @@ function goc(v) {
     // "(1 gün önce)" / "(toplantı günü)" yerine haftanın günü yazılıyor: "(Pazartesi)".
     gmAdlariniGuncelle(v);
     v.surum = 11;
+  }
+  if (v.surum < 12) {
+    // "Gündem Arşivi" Drive kısayolu kaldırıldı (link girilmişse dokunulmaz).
+    v.linkler = (v.linkler || []).filter(l => !(l.ad === 'Gündem Arşivi' && !l.url));
+    v.surum = 12;
   }
   return v;
 }
