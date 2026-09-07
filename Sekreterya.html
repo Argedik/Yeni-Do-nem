@@ -368,6 +368,7 @@ function varsayilanVeri() {
       baslangic: bugunISO(),    // bu tarihten öncesi "geciken" sayılmaz
     },
     isler: [
+      { id: yeniId(), ad: 'Gündem maddesi oluştur ve Kübra başkandan onay iste', kategori: 'Toplantı', tip: 'toplanti', ofsetler: [-2], saat: '12:00', aciklama: '', link: '' },
       { id: yeniId(), ad: 'Gündem maddelerini gruba ilet ve anket aç', kategori: 'İletişim', tip: 'toplanti', ofsetler: [-1], saat: '12:00', aciklama: '', link: '' },
       { id: yeniId(), ad: `${GM_HATIRLATMA} (${ofsetGunAdi(0, 3)})`, kategori: 'İletişim', tip: 'toplanti', ofsetler: [0], saat: '12:00', aciklama: '', link: '' },
       { id: yeniId(), ad: '3 adet gündem maddesi + 1 adet son tutanak çıktısı al', kategori: 'Toplantı', tip: 'toplanti', ofsetler: [0], saat: '17:00', aciklama: 'Toplantı kartında: "Gündem çıktısı" ile 3 madde, "Son tutanak" ile önceki toplantının tutanağı.', link: '' },
@@ -385,7 +386,7 @@ function varsayilanVeri() {
     ],
     yapildi: {},   // "isId#YYYY-MM-DD" -> {t: zaman}
     surekli: {},   // isId -> son yapıldı ISO
-    surum: 14,     // veri şeması sürümü (göç için)
+    surum: 15,     // veri şeması sürümü (göç için)
   };
 }
 
@@ -555,6 +556,13 @@ function goc(v) {
       && Array.isArray(i.ofsetler) && i.ofsetler.length === 1 && i.ofsetler[0] === -1);
     if (gm) gm.ad = 'Gündem maddelerini gruba ilet ve anket aç';
     v.surum = 14;
+  }
+  if (v.surum < 15) {
+    // Toplantıdan iki gün önce (Pazar): gündem maddesi hazırla, başkandan onay al.
+    if (!v.isler.some(i => i.ad === 'Gündem maddesi oluştur ve Kübra başkandan onay iste')) {
+      v.isler.unshift({ id: yeniId(), ad: 'Gündem maddesi oluştur ve Kübra başkandan onay iste', kategori: 'Toplantı', tip: 'toplanti', ofsetler: [-2], saat: '12:00', aciklama: '', link: '' });
+    }
+    v.surum = 15;
   }
   return v;
 }
