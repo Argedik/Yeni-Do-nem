@@ -375,7 +375,6 @@ function varsayilanVeri() {
       { id: yeniId(), ad: 'Yoklamayı Drive dosyasında güncelle', kategori: 'Arşiv', tip: 'toplanti', ofsetler: [1], saat: '21:30', aciklama: '', link: '' },
       { id: yeniId(), ad: 'Ana birime aylık rapor hatırlatması yap', kategori: 'Rapor', tip: 'aylik', ayGunu: 21, saat: '10:00', aciklama: 'Rapor tesliminden 1 hafta önce ana birimi uyar.', link: '' },
       { id: yeniId(), ad: 'Aylık raporu sunum haline getir ve ana birime gönder', kategori: 'Rapor', tip: 'aylik', ayGunu: 28, saat: '18:00', aciklama: '', link: '' },
-      { id: yeniId(), ad: 'Güncel listeyi düzenle (yeni katılım / görev değişikliği)', kategori: 'Liste', tip: 'surekli', aciklama: 'Ekibe yeni katılan hanım, görev değişikliği veya ayrılma olduğunda Drive\'daki listeyi güncelle.', link: '' },
     ],
     toplantilar: [],
     linkler: [
@@ -386,7 +385,7 @@ function varsayilanVeri() {
     ],
     yapildi: {},   // "isId#YYYY-MM-DD" -> {t: zaman}
     surekli: {},   // isId -> son yapıldı ISO
-    surum: 12,     // veri şeması sürümü (göç için)
+    surum: 13,     // veri şeması sürümü (göç için)
   };
 }
 
@@ -542,6 +541,13 @@ function goc(v) {
     // "Gündem Arşivi" Drive kısayolu kaldırıldı (link girilmişse dokunulmaz).
     v.linkler = (v.linkler || []).filter(l => !(l.ad === 'Gündem Arşivi' && !l.url));
     v.surum = 12;
+  }
+  if (v.surum < 13) {
+    // Liste güncelleme sürekli takip maddesi kaldırıldı; sürekli takip gerektirmiyor.
+    const cikar = v.isler.filter(i => i.tip === 'surekli' && i.ad === 'Güncel listeyi düzenle (yeni katılım / görev değişikliği)');
+    v.isler = v.isler.filter(i => !cikar.includes(i));
+    cikar.forEach(i => { if (v.surekli) delete v.surekli[i.id]; });
+    v.surum = 13;
   }
   return v;
 }
@@ -1126,9 +1132,10 @@ function toplantiKaydet(id) {
 
 function donemOlusturAc() {
   const bug = new Date();
-  const bit = iso(new Date(bug.getFullYear(), bug.getMonth() + 4, 0));
+  // Varsayılan bitiş: dönem sonu (30 Haziran). Temmuz ve sonrasında bir sonraki yılın Haziran'ı.
+  const bit = iso(new Date(bug.getMonth() >= 6 ? bug.getFullYear() + 1 : bug.getFullYear(), 5, 30));
   modalAc('Dönem toplantılarını oluştur', `
-    <p class="ipucu" style="margin-top:0">Seçtiğin gün için, iki tarih arasındaki tüm haftalara toplantı kaydı açılır. Zaten kayıtlı olan tarihler atlanır.</p>
+    <p class="ipucu" style="margin-top:0">Seçtiğin gün için, iki tarih arasındaki tüm haftalara toplantı kaydı açılır. Zaten kayıtlı olan tarihler atlanır. Bitiş varsayılan olarak dönem sonudur (30 Haziran).</p>
     <div class="form-satir">
       <div class="alan"><label>Toplantı günü</label><select id="d_gun">
         ${GUN_ADLARI.map((g, i) => `<option value="${i}" ${i === Number(state.ayar.toplantiGunu) ? 'selected' : ''}>${g}</option>`).join('')}</select></div>
