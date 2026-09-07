@@ -71,6 +71,7 @@ function varsayilanVeri() {
       { id: yeniId(), ad: 'Tutanağı hazırla ve Drive dosyasına ekle', kategori: 'Arşiv', tip: 'toplanti', ofsetler: [1], saat: '21:00', aciklama: '', link: '' },
       { id: yeniId(), ad: 'Yoklamayı Drive dosyasında güncelle', kategori: 'Arşiv', tip: 'toplanti', ofsetler: [1], saat: '21:30', aciklama: '', link: '' },
       { id: yeniId(), ad: 'Ana birime görevleri hatırlat', kategori: 'İletişim', tip: 'haftalik', gun: 5, saat: '12:00', aciklama: '', link: '' },
+      { id: yeniId(), ad: 'Ana birime "Drive dosyalarınızı güncelleyin" mesajı ilet', kategori: 'İletişim', tip: 'aylik', ayGunu: 10, saat: '12:00', aciklama: '', link: '' },
       { id: yeniId(), ad: 'Ana birime aylık rapor hatırlatması yap', kategori: 'Rapor', tip: 'aylik', ayGunu: 21, saat: '10:00', aciklama: 'Rapor tesliminden 1 hafta önce ana birimi uyar.', link: '' },
       { id: yeniId(), ad: 'Aylık raporu sunum haline getir ve ana birime gönder', kategori: 'Rapor', tip: 'aylik', ayGunu: 28, saat: '18:00', aciklama: '', link: '' },
     ],
@@ -83,7 +84,7 @@ function varsayilanVeri() {
     ],
     yapildi: {},   // "isId#YYYY-MM-DD" -> {t: zaman}
     surekli: {},   // isId -> son yapıldı ISO
-    surum: 16,     // veri şeması sürümü (göç için)
+    surum: 17,     // veri şeması sürümü (göç için)
   };
 }
 
@@ -267,6 +268,13 @@ function goc(v) {
       v.isler.push({ id: yeniId(), ad: 'Ana birime görevleri hatırlat', kategori: 'İletişim', tip: 'haftalik', gun: 5, saat: '12:00', aciklama: '', link: '' });
     }
     v.surum = 16;
+  }
+  if (v.surum < 17) {
+    // Her ayın 10'u: ana birime Drive dosyalarını güncelleme mesajı.
+    if (!v.isler.some(i => i.ad === 'Ana birime "Drive dosyalarınızı güncelleyin" mesajı ilet')) {
+      v.isler.push({ id: yeniId(), ad: 'Ana birime "Drive dosyalarınızı güncelleyin" mesajı ilet', kategori: 'İletişim', tip: 'aylik', ayGunu: 10, saat: '12:00', aciklama: '', link: '' });
+    }
+    v.surum = 17;
   }
   return v;
 }
