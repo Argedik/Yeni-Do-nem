@@ -76,6 +76,7 @@ main{max-width:1080px; margin:0 auto; padding:20px 16px 40px}
 .btn.ghost{background:transparent; color:var(--turkuaz)}
 .btn.gri{background:#fff; border-color:var(--cizgi); color:var(--yazi)}
 .btn.gri:hover{background:var(--zemin)}
+.btn.yesil{background:var(--yesil); border-color:var(--yesil); color:#fff}
 .btn.tehlike{background:#fff; border-color:#e7bdb7; color:var(--kirmizi)}
 .btn.sm{padding:5px 10px; font-size:12.5px; border-radius:8px}
 .btn.blok{width:100%; justify-content:center}

@@ -83,6 +83,7 @@ main{max-width:1080px; margin:0 auto; padding:20px 16px 40px}
 .btn.ghost{background:transparent; color:var(--turkuaz)}
 .btn.gri{background:#fff; border-color:var(--cizgi); color:var(--yazi)}
 .btn.gri:hover{background:var(--zemin)}
+.btn.yesil{background:var(--yesil); border-color:var(--yesil); color:#fff}
 .btn.tehlike{background:#fff; border-color:#e7bdb7; color:var(--kirmizi)}
 .btn.sm{padding:5px 10px; font-size:12.5px; border-radius:8px}
 .btn.blok{width:100%; justify-content:center}
@@ -876,8 +877,8 @@ function gunModalAc(tarih) {
     ${liste.length ? `<ul class="is-liste" style="margin:-6px -4px">${liste.map(o => isSatiri(o)).join('')}</ul>`
       : `<div class="bos">Bu güne planlanmış iş yok.</div>`}`;
   modalAc(uzunTarih(tarih), ic,
-    `<button class="btn gri" data-act="modal-kapat">Kapat</button>
-     <button class="btn" data-act="hizli-is" data-date="${tarih}">+ Bu güne iş ekle</button>`);
+    `<button class="btn gri" data-act="hizli-is" data-date="${tarih}">+ Bu güne iş ekle</button>
+     <button class="btn yesil" data-act="gun-kaydet">✔ Kaydet</button>`);
 }
 
 /* ================================================================
@@ -1415,6 +1416,7 @@ document.body.addEventListener('click', e => {
       } break;
     case 'toplanti-ac': git('toplanti'); break;
     case 'donem-olustur': donemOlusturAc(); break;
+    case 'gun-kaydet': kaydet(); modalKapat(); ciz(); toast('✔️ Kaydedildi'); break;
     case 'donem-kaydet': donemKaydet(); break;
     case 'mazeret-kopya': {
       const m = mazeretMetni(id);

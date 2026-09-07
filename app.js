@@ -569,8 +569,8 @@ function gunModalAc(tarih) {
     ${liste.length ? `<ul class="is-liste" style="margin:-6px -4px">${liste.map(o => isSatiri(o)).join('')}</ul>`
       : `<div class="bos">Bu güne planlanmış iş yok.</div>`}`;
   modalAc(uzunTarih(tarih), ic,
-    `<button class="btn gri" data-act="modal-kapat">Kapat</button>
-     <button class="btn" data-act="hizli-is" data-date="${tarih}">+ Bu güne iş ekle</button>`);
+    `<button class="btn gri" data-act="hizli-is" data-date="${tarih}">+ Bu güne iş ekle</button>
+     <button class="btn yesil" data-act="gun-kaydet">✔ Kaydet</button>`);
 }
 
 /* ================================================================
@@ -1108,6 +1108,7 @@ document.body.addEventListener('click', e => {
       } break;
     case 'toplanti-ac': git('toplanti'); break;
     case 'donem-olustur': donemOlusturAc(); break;
+    case 'gun-kaydet': kaydet(); modalKapat(); ciz(); toast('✔️ Kaydedildi'); break;
     case 'donem-kaydet': donemKaydet(); break;
     case 'mazeret-kopya': {
       const m = mazeretMetni(id);
