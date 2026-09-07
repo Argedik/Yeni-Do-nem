@@ -354,7 +354,8 @@ function varsayilanVeri() {
       baslangic: bugunISO(),    // bu tarihten öncesi "geciken" sayılmaz
     },
     isler: [
-      { id: yeniId(), ad: 'Toplantı hatırlatma mesajını GM grubuna ilet', kategori: 'İletişim', tip: 'toplanti', ofsetler: [-1, 0], saat: '12:00', aciklama: '', link: '' },
+      { id: yeniId(), ad: 'Toplantı hatırlatma mesajını GM grubuna ilet (1 gün önce)', kategori: 'İletişim', tip: 'toplanti', ofsetler: [-1], saat: '12:00', aciklama: '', link: '' },
+      { id: yeniId(), ad: 'Toplantı hatırlatma mesajını GM grubuna ilet (toplantı günü)', kategori: 'İletişim', tip: 'toplanti', ofsetler: [0], saat: '12:00', aciklama: '', link: '' },
       { id: yeniId(), ad: '3 adet gündem maddesi + 1 adet son tutanak çıktısı al', kategori: 'Toplantı', tip: 'toplanti', ofsetler: [0], saat: '17:00', aciklama: 'Toplantı kartında: "Gündem çıktısı" ile 3 madde, "Son tutanak" ile önceki toplantının tutanağı.', link: '' },
       { id: yeniId(), ad: 'Tutanağı hazırla ve Drive dosyasına ekle', kategori: 'Arşiv', tip: 'toplanti', ofsetler: [1], saat: '21:00', aciklama: '', link: '' },
       { id: yeniId(), ad: 'Yoklamayı Drive dosyasında güncelle', kategori: 'Arşiv', tip: 'toplanti', ofsetler: [1], saat: '21:30', aciklama: '', link: '' },
@@ -372,7 +373,7 @@ function varsayilanVeri() {
     ],
     yapildi: {},   // "isId#YYYY-MM-DD" -> {t: zaman}
     surekli: {},   // isId -> son yapıldı ISO
-    surum: 9,      // veri şeması sürümü (göç için)
+    surum: 10,     // veri şeması sürümü (göç için)
   };
 }
 
@@ -501,6 +502,23 @@ function goc(v) {
       sur.aciklama = 'Ekibe yeni katılan hanım, görev değişikliği veya ayrılma olduğunda Drive\'daki listeyi güncelle.';
     }
     v.surum = 9;
+  }
+  if (v.surum < 10) {
+    // GM hatırlatması iki ayrı işe bölündü: bir gün önce ve toplantı günü.
+    const gm = v.isler.find(i => i.ad === 'Toplantı hatırlatma mesajını GM grubuna ilet');
+    if (gm) {
+      gm.ad = 'Toplantı hatırlatma mesajını GM grubuna ilet (1 gün önce)';
+      gm.ofsetler = [-1];
+      const gunu = { ...gm, id: yeniId(), ad: 'Toplantı hatırlatma mesajını GM grubuna ilet (toplantı günü)', ofsetler: [0] };
+      v.isler.splice(v.isler.indexOf(gm) + 1, 0, gunu);
+      // Toplantı gününe düşen eski işaretlemeler yeni işe taşınır.
+      const toplantiTarihleri = new Set((v.toplantilar || []).map(t => t.tarih));
+      Object.keys(v.yapildi || {}).filter(k => k.startsWith(gm.id + '#')).forEach(k => {
+        const tarih = k.slice(gm.id.length + 1);
+        if (toplantiTarihleri.has(tarih)) { v.yapildi[gunu.id + '#' + tarih] = v.yapildi[k]; delete v.yapildi[k]; }
+      });
+    }
+    v.surum = 10;
   }
   return v;
 }
