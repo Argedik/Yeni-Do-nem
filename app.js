@@ -5,6 +5,20 @@
 
 const ANAHTAR = 'sekreterya_v1';
 const GUN_ADLARI = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+const GM_HATIRLATMA = 'Toplantı hatırlatma mesajını GM grubuna ilet';
+
+/** Toplantı gününe göre kaydırmanın düştüğü haftanın günü: toplantı Salı, -1 → "Pazartesi" */
+function ofsetGunAdi(o, toplantiGunu) {
+  const g = Number(toplantiGunu ?? (typeof state !== 'undefined' ? state.ayar.toplantiGunu : 3));
+  return GUN_ADLARI[(((g + Number(o)) % 7) + 7) % 7];
+}
+/** GM hatırlatma işlerinin adındaki gün parantezini toplantı gününe göre yeniler. */
+function gmAdlariniGuncelle(v) {
+  v.isler.filter(i => i.tip === 'toplanti' && i.ad.startsWith(GM_HATIRLATMA)).forEach(i => {
+    const l = Array.isArray(i.ofsetler) && i.ofsetler.length ? i.ofsetler : [i.ofset ?? 0];
+    i.ad = `${GM_HATIRLATMA} (${l.map(o => ofsetGunAdi(o, v.ayar.toplantiGunu)).join(' ve ')})`;
+  });
+}
 const GUN_KISA = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']; // takvim başlığı (Pzt başlangıç)
 const AY_ADLARI = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz',
   'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
@@ -50,8 +64,8 @@ function varsayilanVeri() {
       baslangic: bugunISO(),    // bu tarihten öncesi "geciken" sayılmaz
     },
     isler: [
-      { id: yeniId(), ad: 'Toplantı hatırlatma mesajını GM grubuna ilet (1 gün önce)', kategori: 'İletişim', tip: 'toplanti', ofsetler: [-1], saat: '12:00', aciklama: '', link: '' },
-      { id: yeniId(), ad: 'Toplantı hatırlatma mesajını GM grubuna ilet (toplantı günü)', kategori: 'İletişim', tip: 'toplanti', ofsetler: [0], saat: '12:00', aciklama: '', link: '' },
+      { id: yeniId(), ad: `${GM_HATIRLATMA} (${ofsetGunAdi(-1, 3)})`, kategori: 'İletişim', tip: 'toplanti', ofsetler: [-1], saat: '12:00', aciklama: '', link: '' },
+      { id: yeniId(), ad: `${GM_HATIRLATMA} (${ofsetGunAdi(0, 3)})`, kategori: 'İletişim', tip: 'toplanti', ofsetler: [0], saat: '12:00', aciklama: '', link: '' },
       { id: yeniId(), ad: '3 adet gündem maddesi + 1 adet son tutanak çıktısı al', kategori: 'Toplantı', tip: 'toplanti', ofsetler: [0], saat: '17:00', aciklama: 'Toplantı kartında: "Gündem çıktısı" ile 3 madde, "Son tutanak" ile önceki toplantının tutanağı.', link: '' },
       { id: yeniId(), ad: 'Tutanağı hazırla ve Drive dosyasına ekle', kategori: 'Arşiv', tip: 'toplanti', ofsetler: [1], saat: '21:00', aciklama: '', link: '' },
       { id: yeniId(), ad: 'Yoklamayı Drive dosyasında güncelle', kategori: 'Arşiv', tip: 'toplanti', ofsetler: [1], saat: '21:30', aciklama: '', link: '' },
@@ -69,7 +83,7 @@ function varsayilanVeri() {
     ],
     yapildi: {},   // "isId#YYYY-MM-DD" -> {t: zaman}
     surekli: {},   // isId -> son yapıldı ISO
-    surum: 10,     // veri şeması sürümü (göç için)
+    surum: 11,     // veri şeması sürümü (göç için)
   };
 }
 
@@ -216,6 +230,11 @@ function goc(v) {
     }
     v.surum = 10;
   }
+  if (v.surum < 11) {
+    // "(1 gün önce)" / "(toplantı günü)" yerine haftanın günü yazılıyor: "(Pazartesi)".
+    gmAdlariniGuncelle(v);
+    v.surum = 11;
+  }
   return v;
 }
 
@@ -276,9 +295,11 @@ function ofsetListesi(is) {
 
 /** Tek kaydırmanın okunur karşılığı: -1 → "Toplantıdan 1 gün önce" */
 function ofsetMetni(o, kisa) {
-  if (o === 0) return kisa ? 'toplantı günü' : 'Toplantı günü';
+  const gun = ofsetGunAdi(o);
+  if (kisa) return gun;
+  if (o === 0) return `${gun} (toplantı günü)`;
   const yon = o < 0 ? 'önce' : 'sonra';
-  return `${kisa ? '' : 'Toplantıdan '}${Math.abs(o)} gün ${yon}`;
+  return `${gun} (toplantıdan ${Math.abs(o)} gün ${yon})`;
 }
 
 function tekrarMetni(is) {
@@ -289,8 +310,7 @@ function tekrarMetni(is) {
     case 'surekli': return 'Sürekli takip (tarihsiz)';
     case 'toplanti': {
       const l = ofsetListesi(is);
-      return l.length === 1 ? ofsetMetni(l[0])
-        : 'Toplantıdan ' + l.map(o => ofsetMetni(o, true)).join(' ve ');
+      return l.map(o => ofsetMetni(o)).join(' ve ');
     }
     default: return '';
   }
@@ -836,6 +856,7 @@ function donemKaydet() {
     n++;
   }
   state.ayar.toplantiGunu = gun; state.ayar.toplantiSaat = saat; state.ayar.toplantiYer = yer;
+  gmAdlariniGuncelle(state);
   kaydet(); modalKapat(); ciz();
   toast(n ? `✔️ ${n} toplantı oluşturuldu` : 'Yeni tarih eklenmedi (hepsi zaten kayıtlı)');
 }
@@ -1084,6 +1105,7 @@ document.body.addEventListener('click', e => {
       state.ayar.toplantiGunu = Number(document.getElementById('a_gun').value);
       state.ayar.toplantiSaat = document.getElementById('a_saat').value;
       state.ayar.toplantiYer = document.getElementById('a_yer').value.trim();
+      gmAdlariniGuncelle(state);
       kaydet(); ciz(); toast('✔️ Ayarlar kaydedildi'); break;
     case 'yedek-indir': yedekIndir(); break;
     case 'yedek-yukle': document.getElementById('yedekDosya').click(); break;
