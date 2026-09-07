@@ -531,7 +531,7 @@ function gorunumTakvim() {
       <div class="no">${g}${toplantiGunleri.has(t) ? ' 🪑' : ''}</div>
       <div class="nokta-sira">${list.slice(0, 8).map(o =>
       `<span class="nokta ${o.tamam ? 'tamam' : (t < bugunISO() ? 'gec' : '')}"></span>`).join('')}</div>
-      ${list.length ? `<div class="mini">${kacik(list[0].is.ad.slice(0, 22))}${list.length > 1 ? `<br>+${list.length - 1} iş` : ''}</div>` : ''}
+      ${list.length ? `<div class="mini">${list.slice(0, 3).map(o => `<span class="mini-is ${o.tamam ? 'tamam' : ''}">${kacik(o.is.ad)}</span>`).join('')}${list.length > 3 ? `<span class="mini-fazla">+${list.length - 3} iş</span>` : ''}</div>` : ''}
     </div>`;
   }
 

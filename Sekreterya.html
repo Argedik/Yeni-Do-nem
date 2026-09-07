@@ -142,7 +142,7 @@ textarea{resize:vertical; min-height:80px; line-height:1.55}
 .takvim{display:grid; grid-template-columns:repeat(7,1fr); gap:6px}
 .takvim .gun-ad{text-align:center; font-size:12px; font-weight:700; color:var(--soluk); padding:4px 0}
 .gun{
-  background:#fff; border:1px solid var(--cizgi); border-radius:10px; min-height:78px; padding:6px;
+  background:#fff; border:1px solid var(--cizgi); border-radius:10px; min-height:112px; padding:8px;
   cursor:pointer; display:flex; flex-direction:column; gap:4px;
 }
 .gun:hover{border-color:var(--turkuaz)}
@@ -155,7 +155,10 @@ textarea{resize:vertical; min-height:80px; line-height:1.55}
 .nokta{width:7px;height:7px;border-radius:50%;background:var(--turkuaz)}
 .nokta.gec{background:var(--kirmizi)}
 .nokta.tamam{background:#c3cfdb}
-.gun .mini{font-size:10.5px; color:var(--soluk); line-height:1.25; overflow:hidden}
+.gun .mini{font-size:11.5px; color:var(--yazi); line-height:1.3; overflow-wrap:anywhere}
+.gun .mini .mini-is{display:block; margin-top:3px}
+.gun .mini .mini-is.tamam{color:var(--soluk); text-decoration:line-through}
+.gun .mini .mini-fazla{display:block; margin-top:3px; color:var(--soluk)}
 
 /* ---------- Açılır satır (Rutin İşler) ---------- */
 .acilir{border-top:1px solid var(--cizgi)}
@@ -248,7 +251,7 @@ td.sag,th.sag{text-align:right}
   main{padding:14px 12px 30px}
   .topbar{padding:12px 14px}
   .bugun-tarih{display:none}
-  .gun{min-height:58px}
+  .gun{min-height:58px; padding:5px}
   .gun .mini{display:none}
   .is{padding:11px 12px}
   .kart-ic{padding:12px}
@@ -835,7 +838,7 @@ function gorunumTakvim() {
       <div class="no">${g}${toplantiGunleri.has(t) ? ' 🪑' : ''}</div>
       <div class="nokta-sira">${list.slice(0, 8).map(o =>
       `<span class="nokta ${o.tamam ? 'tamam' : (t < bugunISO() ? 'gec' : '')}"></span>`).join('')}</div>
-      ${list.length ? `<div class="mini">${kacik(list[0].is.ad.slice(0, 22))}${list.length > 1 ? `<br>+${list.length - 1} iş` : ''}</div>` : ''}
+      ${list.length ? `<div class="mini">${list.slice(0, 3).map(o => `<span class="mini-is ${o.tamam ? 'tamam' : ''}">${kacik(o.is.ad)}</span>`).join('')}${list.length > 3 ? `<span class="mini-fazla">+${list.length - 3} iş</span>` : ''}</div>` : ''}
     </div>`;
   }
 
