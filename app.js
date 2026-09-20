@@ -58,7 +58,7 @@ function varsayilanVeri() {
   return {
     ayar: {
       birim: 'TÜGVA Genel Merkez Üniversite Hanım Koordinatörlüğü',
-      toplantiGunu: 3,          // 0=Pazar ... 3=Çarşamba
+      toplantiGunu: 2,          // 0=Pazar ... 2=Salı
       toplantiSaat: '19:00',
       toplantiYer: '',
       baslangic: bugunISO(),    // bu tarihten öncesi "geciken" sayılmaz
@@ -66,7 +66,7 @@ function varsayilanVeri() {
     isler: [
       { id: yeniId(), ad: 'Gündem maddesi oluştur ve Kübra başkandan onay iste', kategori: 'Toplantı', tip: 'toplanti', ofsetler: [-2], saat: '12:00', aciklama: '', link: '' },
       { id: yeniId(), ad: 'Gündem maddelerini gruba ilet ve anket aç', kategori: 'İletişim', tip: 'toplanti', ofsetler: [-1], saat: '12:00', aciklama: '', link: '' },
-      { id: yeniId(), ad: `${GM_HATIRLATMA} (${ofsetGunAdi(0, 3)})`, kategori: 'İletişim', tip: 'toplanti', ofsetler: [0], saat: '12:00', aciklama: '', link: '' },
+      { id: yeniId(), ad: `${GM_HATIRLATMA} (${ofsetGunAdi(0, 2)})`, kategori: 'İletişim', tip: 'toplanti', ofsetler: [0], saat: '12:00', aciklama: '', link: '' },
       { id: yeniId(), ad: '3 adet gündem maddesi + 1 adet son tutanak çıktısı al', kategori: 'Toplantı', tip: 'toplanti', ofsetler: [0], saat: '17:00', aciklama: 'Toplantı kartında: "Gündem çıktısı" ile 3 madde, "Son tutanak" ile önceki toplantının tutanağı.', link: '' },
       { id: yeniId(), ad: 'Tutanağı hazırla ve Drive dosyasına ekle', kategori: 'Arşiv', tip: 'toplanti', ofsetler: [1], saat: '21:00', aciklama: '', link: '' },
       { id: yeniId(), ad: 'Yoklamayı Drive dosyasında güncelle', kategori: 'Arşiv', tip: 'toplanti', ofsetler: [1], saat: '21:30', aciklama: '', link: '' },
@@ -84,7 +84,7 @@ function varsayilanVeri() {
     ],
     yapildi: {},   // "isId#YYYY-MM-DD" -> {t: zaman}
     surekli: {},   // isId -> son yapıldı ISO
-    surum: 17,     // veri şeması sürümü (göç için)
+    surum: 18,     // veri şeması sürümü (göç için)
   };
 }
 
@@ -275,6 +275,14 @@ function goc(v) {
       v.isler.push({ id: yeniId(), ad: 'Ana birime "Drive dosyalarınızı güncelleyin" mesajı ilet', kategori: 'İletişim', tip: 'aylik', ayGunu: 10, saat: '12:00', aciklama: '', link: '' });
     }
     v.surum = 17;
+  }
+  if (v.surum < 18) {
+    // Olağan toplantı günü Salı oldu. Kayıtlı toplantılar varsa gün onlardan okunur.
+    const gunler = [...new Set((v.toplantilar || []).map(t => tarihNesnesi(t.tarih).getDay()))];
+    if (gunler.length === 1) v.ayar.toplantiGunu = gunler[0];
+    else if (Number(v.ayar.toplantiGunu) === 3) v.ayar.toplantiGunu = 2;
+    gmAdlariniGuncelle(v);
+    v.surum = 18;
   }
   return v;
 }
