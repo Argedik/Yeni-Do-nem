@@ -1015,6 +1015,12 @@ function gorunumAyar() {
       <button class="btn" data-act="ayar-kaydet">Kaydet</button>
     </div></div>
 
+  <div class="kart"><div class="kart-bas"><h2>📲 Telefona bildirim</h2></div>
+    <div class="kart-ic">
+      <p class="ipucu" style="margin-top:0">Tarayıcı bildirimi yalnız sayfa açıkken çalışır. Telefonda bildirim için işleri <b>telefonun takvimine</b> aktar: dönem sonuna kadar tüm işler ve toplantılar, her biri saatinde alarm verecek şekilde eklenir. İşler değişince dosyayı yeniden indirip ekle; aynı işler güncellenir, çoğalmaz.</p>
+      <button class="btn" data-act="takvime-aktar">📲 Takvime aktar (.ics)</button>
+    </div></div>
+
   <div class="kart"><div class="kart-bas"><h2>💾 Yedek</h2></div>
     <div class="kart-ic">
       <p class="ipucu" style="margin-top:0">Veriler yalnızca bu bilgisayarın tarayıcısında durur. Tarayıcı verisi silinirse kaybolur — <b>ayda bir yedek indir</b>, dosyayı Drive'a at.</p>
@@ -1045,6 +1051,41 @@ function yedekIndir() {
   a.click(); URL.revokeObjectURL(a.href);
   toast('⬇️ Yedek indirildi');
 }
+/* ---------------- Takvim dışa aktarma (.ics) ----------------
+   Telefonun kendi takvimi bildirim verir; sunucu/hesap gerekmez. */
+function icsMetin(t) { return String(t || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/[,;]/g, m => '\\' + m); }
+function icsZaman(tarih, saat) {
+  const [h, m] = (saat || '09:00').split(':').map(Number);
+  return tarih.replace(/-/g, '') + 'T' + String(h).padStart(2, '0') + String(m).padStart(2, '0') + '00';
+}
+function icsUret() {
+  const bug = bugunISO();
+  const d = new Date();
+  const bit = iso(new Date(d.getMonth() >= 6 ? d.getFullYear() + 1 : d.getFullYear(), 5, 30));
+  const damga = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+  const olay = (uid, baslik, tarih, saat, dakika, aciklama) => [
+    'BEGIN:VEVENT', `UID:${uid}@sekreterya`, `DTSTAMP:${damga}`,
+    `DTSTART:${icsZaman(tarih, saat)}`, `DURATION:PT${dakika}M`,
+    `SUMMARY:${icsMetin(baslik)}`, aciklama ? `DESCRIPTION:${icsMetin(aciklama)}` : '',
+    'BEGIN:VALARM', 'ACTION:DISPLAY', 'TRIGGER:PT0M', `DESCRIPTION:${icsMetin(baslik)}`, 'END:VALARM',
+    'END:VEVENT'].filter(Boolean);
+  const satirlar = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Sekreterya Paneli//TR', 'CALSCALE:GREGORIAN',
+    'X-WR-CALNAME:Sekreterya', 'X-WR-TIMEZONE:Europe/Istanbul'];
+  olusumlar(bug, bit).filter(o => !o.tamam).forEach(o =>
+    satirlar.push(...olay(o.anahtar, o.is.ad, o.tarih, o.saat || '09:00', 30, o.is.aciklama)));
+  state.toplantilar.filter(t => t.tarih >= bug).forEach(t =>
+    satirlar.push(...olay('toplanti-' + t.id, '🪑 Birim toplantısı', t.tarih, t.saat || state.ayar.toplantiSaat, 90, t.yer)));
+  satirlar.push('END:VCALENDAR');
+  return satirlar.join('\r\n');
+}
+function takvimeAktar() {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([icsUret()], { type: 'text/calendar;charset=utf-8' }));
+  a.download = `sekreterya-${bugunISO()}.ics`;
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('📲 Takvim dosyası indirildi — telefonda aç, "Tümünü ekle" de');
+}
+
 function yedekYukle(dosya) {
   const fr = new FileReader();
   fr.onload = () => {
@@ -1183,6 +1224,7 @@ document.body.addEventListener('click', e => {
       gmAdlariniGuncelle(state);
       kaydet(); ciz(); toast('✔️ Ayarlar kaydedildi'); break;
     case 'yedek-indir': yedekIndir(); break;
+    case 'takvime-aktar': takvimeAktar(); break;
     case 'yedek-yukle': document.getElementById('yedekDosya').click(); break;
     case 'sifirla':
       if (confirm('TÜM veriler silinip başlangıç haline dönülecek. Emin misin?') &&
