@@ -1391,7 +1391,27 @@ function takvimeAktar() {
   a.href = URL.createObjectURL(new Blob([icsUret()], { type: 'text/calendar;charset=utf-8' }));
   a.download = `sekreterya-${bugunISO()}.ics`;
   a.click(); URL.revokeObjectURL(a.href);
-  toast('📲 Takvim dosyası indirildi — telefonda aç, "Tümünü ekle" de');
+  const iphone = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  const android = /Android/.test(navigator.userAgent);
+  const adimlar = iphone ? [
+    'Safari\'de sağ üstteki <b>indirme okuna (⬇︎)</b> dokun.',
+    '<b>sekreterya-…ics</b> dosyasına dokun; Takvim önizlemesi açılır.',
+    'Sağ üstte <b>Tümünü Ekle</b> de, hangi takvime ekleneceğini seç.',
+    'Takvim uygulamasını aç; bugünden itibaren işler saatinde alarmlı olarak durur.'
+  ] : android ? [
+    'Bildirim çubuğundan veya <b>Dosyalar › İndirilenler</b>\'den <b>sekreterya-…ics</b> dosyasını aç.',
+    'Google Takvim ile aç, <b>Tümünü ekle</b> / <b>Kaydet</b> de.',
+    'Takvim uygulamasını aç; işler saatinde bildirimli olarak durur.'
+  ] : [
+    'İndirilenler klasöründeki <b>sekreterya-…ics</b> dosyasına çift tıkla.',
+    'Takvim uygulaması açılır; hangi takvime ekleneceğini seç, <b>Tamam</b> de.',
+    'iCloud takvimi seçersen aynı olaylar iPhone\'una da düşer ve orada bildirim verir.'
+  ];
+  modalAc('📲 Takvim dosyası indi — şimdi ekle', `
+    <p class="ipucu" style="margin-top:0">Dosya indirildi ama takvime <b>kendiliğinden eklenmez</b>. Şu adımları izle:</p>
+    <ol style="margin:0;padding-left:22px;line-height:1.7">${adimlar.map(x => `<li>${x}</li>`).join('')}</ol>
+    <p class="ipucu">Dosyada bugünden dönem sonuna kadar <b>${icsUret().split('BEGIN:VEVENT').length - 1}</b> olay var. Yapıldı işaretlenen işler dahil edilmez.</p>`,
+    `<button class="btn" data-act="modal-kapat">Anladım</button>`);
 }
 
 function yedekYukle(dosya) {
