@@ -405,6 +405,30 @@ const depoVar = (() => {
 })();
 
 let state = yukle();
+donemToplantilariniTamamla();
+
+/**
+ * Toplantı günü sabittir (Ayarlar). Önümüzde hiç toplantı kaydı yoksa dönem sonuna
+ * (30 Haziran) kadar her haftaya toplantı açar; böylece toplantıya bağlı işler hep görünür.
+ * Elle silinen tek bir tarih geri gelmez: yalnız ileride HİÇ toplantı kalmamışsa çalışır.
+ */
+function donemToplantilariniTamamla() {
+  const bug = bugunISO();
+  if (state.toplantilar.some(t => t.tarih >= bug)) return;
+  const d = new Date();
+  const bit = iso(new Date(d.getMonth() >= 6 ? d.getFullYear() + 1 : d.getFullYear(), 5, 30));
+  const gun = Number(state.ayar.toplantiGunu);
+  let g = bug;
+  while (tarihNesnesi(g).getDay() !== gun) g = gunEkle(g, 1);
+  const mevcut = new Set(state.toplantilar.map(t => t.tarih));
+  let n = 0;
+  for (; gunFarki(g, bit) >= 0; g = gunEkle(g, 7)) {
+    if (mevcut.has(g)) continue;
+    state.toplantilar.push({ id: yeniId(), tarih: g, saat: state.ayar.toplantiSaat, yer: state.ayar.toplantiYer || '', gundem: ['', '', ''], mazeretler: '', katilimNot: '', notlar: '', tutanakLink: '' });
+    n++;
+  }
+  if (n) kaydet();
+}
 
 function yukle() {
   try {
