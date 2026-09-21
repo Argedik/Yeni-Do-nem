@@ -935,10 +935,8 @@ function toplantiKarti(t) {
     <div class="kart-ic">
       ${t.yer ? `<p style="margin:0 0 10px"><b>Yer:</b> ${kacik(t.yer)}</p>` : ''}
       <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Gündem maddeleri</h4>
-      <div style="display:grid;gap:6px;margin-bottom:14px">
-        ${[0, 1, 2].map(i => `<div style="display:flex;gap:8px;align-items:center"><b style="color:var(--soluk);width:18px">${i + 1}.</b>
-          <input type="text" data-gundem="${i}" data-t="${t.id}" value="${kacik((t.gundem || [])[i] || '')}" placeholder="${i + 1}. gündem maddesi" style="flex:1"></div>`).join('')}
-      </div>
+      <textarea data-gundem-metin data-t="${t.id}" style="min-height:90px" placeholder="Maddeleri yapıştır — her satır bir madde olur. Baştaki 1. / - / • işaretleri kendiliğinden temizlenir.">${kacik(t.gundemMetin ?? (t.gundem || []).filter(Boolean).join('\n'))}</textarea>
+      <ol id="gundem_on_${t.id}" style="margin:8px 0 14px;padding-left:22px;color:var(--soluk);font-size:13.5px">${gundemMaddeleri(t.gundemMetin ?? (t.gundem || []).join('\n')).map(g => `<li>${kacik(g)}</li>`).join('')}</ol>
       <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Mazeretler</h4>
       ${katilimOzeti(t)}
       ${mazeretTablosu(t)}
@@ -964,9 +962,6 @@ function toplantiFormuAc(id) {
     </div>
     <div class="form-satir"><div class="alan"><label>Yer</label>
       <input type="text" id="t_yer" value="${kacik(t.yer || '')}" placeholder="Örn: Birim ofisi / Kampüs A blok"></div></div>
-    <div class="form-satir"><div class="alan"><label>1. gündem maddesi</label><input type="text" id="t_g1" value="${kacik(g[0] || '')}"></div></div>
-    <div class="form-satir"><div class="alan"><label>2. gündem maddesi</label><input type="text" id="t_g2" value="${kacik(g[1] || '')}"></div></div>
-    <div class="form-satir"><div class="alan"><label>3. gündem maddesi</label><input type="text" id="t_g3" value="${kacik(g[2] || '')}"></div></div>
     <div class="form-satir">
       <div class="alan"><label>Katılım notu (isteğe bağlı)</label>
         <input type="text" id="t_katilimNot" value="${kacik(t.katilimNot || '')}" placeholder="Örn: 14/18"></div>
@@ -983,7 +978,7 @@ function toplantiKaydet(id) {
   const al = (x) => document.getElementById(x)?.value?.trim() ?? '';
   const kayit = {
     tarih: al('t_tarih') || bugunISO(), saat: al('t_saat'), yer: al('t_yer'),
-    gundem: [al('t_g1'), al('t_g2'), al('t_g3')], tutanakLink: al('t_tutanak'), notlar: al('t_notlar'),
+    tutanakLink: al('t_tutanak'), notlar: al('t_notlar'),
     katilimNot: al('t_katilimNot'),
   };
   const i = state.toplantilar.findIndex(x => x.id === id);
@@ -1323,12 +1318,24 @@ document.body.addEventListener('change', e => {
   if (e.target.id === 'yedekDosya' && e.target.files[0]) yedekYukle(e.target.files[0]);
 });
 
-// Gündem maddeleri yazıldıkça kaydedilir (yeniden çizmeden — imleç kaçmasın)
+/** Serbest metni gündem maddelerine ayırır: satır başları ve "1." "2)" "-" "•" gibi işaretler temizlenir;
+ *  tek satırda "1. … 2. … 3. …" yazılmışsa oradan da bölünür. */
+function gundemMaddeleri(metin) {
+  let satirlar = String(metin || '').split(/\r?\n/);
+  if (satirlar.filter(x => x.trim()).length === 1) {
+    satirlar = satirlar.join(' ').split(/\s+(?=\d{1,2}\s*[.)-]\s+)/);   // "1. a 2. b" → ["1. a", "2. b"]
+  }
+  return satirlar.map(x => x.replace(/^\s*(?:\d{1,2}\s*[.)-]|[-–—•*·]|[a-zA-ZçğıöşüÇĞİÖŞÜ][.)])\s*/, '').trim()).filter(Boolean);
+}
+// Gündem metni yazıldıkça kaydedilir ve alttaki madde listesi yenilenir (yeniden çizmeden — imleç kaçmasın)
 document.body.addEventListener('input', e => {
-  const g = e.target.closest('[data-gundem]'); if (!g) return;
+  const g = e.target.closest('[data-gundem-metin]'); if (!g) return;
   const t = state.toplantilar.find(x => x.id === g.dataset.t); if (!t) return;
-  t.gundem = t.gundem || ['', '', ''];
-  t.gundem[Number(g.dataset.gundem)] = e.target.value; kaydet();
+  t.gundemMetin = e.target.value;
+  t.gundem = gundemMaddeleri(t.gundemMetin);
+  const on = document.getElementById('gundem_on_' + t.id);
+  if (on) on.innerHTML = t.gundem.map(x => `<li>${kacik(x)}</li>`).join('');
+  kaydet();
 });
 
 // Mazeret satırında Enter → ekle
