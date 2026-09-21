@@ -1242,9 +1242,17 @@ function toplantiKarti(t) {
       </div></div>
     <div class="kart-ic">
       ${t.yer ? `<p style="margin:0 0 10px"><b>Yer:</b> ${kacik(t.yer)}</p>` : ''}
-      <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Gündem maddeleri</h4>
-      <textarea data-gundem-metin data-t="${t.id}" style="min-height:90px" placeholder="Maddeleri yapıştır — her satır bir madde olur. Baştaki 1. / - / • işaretleri kendiliğinden temizlenir.">${kacik(t.gundemMetin ?? (t.gundem || []).filter(Boolean).join('\n'))}</textarea>
-      <ol id="gundem_on_${t.id}" style="margin:8px 0 14px;padding-left:22px;color:var(--soluk);font-size:13.5px">${gundemMaddeleri(t.gundemMetin ?? (t.gundem || []).join('\n')).map(g => `<li>${kacik(g)}</li>`).join('')}</ol>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
+        <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin:0">Gündem maddeleri</h4>
+        ${gundemDuzenlenen === t.id ? '' : `<button class="btn sm gri" data-act="gundem-duzenle" data-id="${t.id}">${(t.gundem || []).length ? 'Düzenle' : '+ Gündem yaz'}</button>`}
+      </div>
+      ${gundemDuzenlenen === t.id ? `
+        <textarea id="gundem_metin_${t.id}" style="min-height:140px" placeholder="Gündem metnini yapıştır. Her satır bir madde; 📌 / 1. / - gibi işaretler temizlenir. İşaretsiz satırlar başlık olur.">${kacik(t.gundemMetin ?? (t.gundem || []).join('\n'))}</textarea>
+        <div class="form-satir" style="margin:8px 0 14px">
+          <button class="btn gri sm" data-act="gundem-vazgec">Vazgeç</button>
+          <button class="btn yesil sm" data-act="gundem-kaydet" data-id="${t.id}">✔ Kaydet</button>
+        </div>`
+      : gundemListesiHTML(t)}
       <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Mazeretler</h4>
       ${katilimOzeti(t)}
       ${mazeretTablosu(t)}
@@ -1401,7 +1409,8 @@ function gundemYazdir(id) {
       <div>TOPLANTI GÜNDEMİ</div>
       <div>${uzunTarih(t.tarih)} · ${kacik(t.saat || state.ayar.toplantiSaat)}${t.yer ? ' · ' + kacik(t.yer) : ''}</div>
     </div>
-    <ol>${g.map(x => `<li>${kacik(x)}</li>`).join('')}</ol>
+    ${(() => { let n = 0; return gundemYapisi(t.gundemMetin ?? g.join('\n')).map(x => x.tip === 'baslik'
+      ? `<h3 style="margin:14px 0 4px">${kacik(x.metin)}</h3>` : `<div style="margin:3px 0 3px 18px">${++n}. ${kacik(x.metin)}</div>`).join(''); })()}
     <div class="p-alt">Katılan: ............ &nbsp;&nbsp; Mazeret: ............ &nbsp;&nbsp; Sekreterya imza: ............</div>
     ${onceki ? `<div class="p-alt">Ek: ${kisaTarih(onceki.tarih)} tarihli toplantı tutanağı — 1 adet çıktı.</div>` : ''}`);
 }
@@ -1628,23 +1637,29 @@ document.body.addEventListener('change', e => {
 
 /** Serbest metni gündem maddelerine ayırır: satır başları ve "1." "2)" "-" "•" gibi işaretler temizlenir;
  *  tek satırda "1. … 2. … 3. …" yazılmışsa oradan da bölünür. */
-function gundemMaddeleri(metin) {
-  let satirlar = String(metin || '').split(/\r?\n/);
-  if (satirlar.filter(x => x.trim()).length === 1) {
-    satirlar = satirlar.join(' ').split(/\s+(?=\d{1,2}\s*[.)-]\s+)/);   // "1. a 2. b" → ["1. a", "2. b"]
-  }
-  return satirlar.map(x => x.replace(/^\s*(?:\d{1,2}\s*[.)-]|[-–—•*·]|[a-zA-ZçğıöşüÇĞİÖŞÜ][.)])\s*/, '').trim()).filter(Boolean);
+let gundemDuzenlenen = null;   // şu an gündemi düzenlenen toplantının id'si
+const ISARET = /^\s*(?:\d{1,2}\s*[.)-]|[-–—•*·>]|📌|📍|🔹|🔸|✅|➡️|→|[a-zA-ZçğıöşüÇĞİÖŞÜ][.)](?=\s))\s*/u;
+/** Metni yapıya çevirir: işaretli satır = madde, işaretsiz satır (madde satırlarının arasında) = başlık. */
+function gundemYapisi(metin) {
+  let satirlar = String(metin || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+  if (satirlar.length === 1) satirlar = satirlar[0].split(/\s+(?=\d{1,2}\s*[.)-]\s+)/);   // "1. a 2. b" → ["1. a", "2. b"]
+  const isaretliVar = satirlar.some(x => ISARET.test(x));
+  return satirlar.map(x => {
+    const isaretli = ISARET.test(x);
+    const temiz = x.replace(ISARET, '').replace(/^[\p{Extended_Pictographic}\uFE0F\s]+/u, '').trim();
+    // Hepsi işaretsizse her satır madde; işaretliler varsa işaretsizler başlık sayılır.
+    return { tip: isaretliVar && !isaretli ? 'baslik' : 'madde', metin: temiz };
+  }).filter(x => x.metin);
 }
-// Gündem metni yazıldıkça kaydedilir ve alttaki madde listesi yenilenir (yeniden çizmeden — imleç kaçmasın)
-document.body.addEventListener('input', e => {
-  const g = e.target.closest('[data-gundem-metin]'); if (!g) return;
-  const t = state.toplantilar.find(x => x.id === g.dataset.t); if (!t) return;
-  t.gundemMetin = e.target.value;
-  t.gundem = gundemMaddeleri(t.gundemMetin);
-  const on = document.getElementById('gundem_on_' + t.id);
-  if (on) on.innerHTML = t.gundem.map(x => `<li>${kacik(x)}</li>`).join('');
-  kaydet();
-});
+function gundemMaddeleri(metin) { return gundemYapisi(metin).filter(x => x.tip === 'madde').map(x => x.metin); }
+function gundemListesiHTML(t) {
+  const yapi = gundemYapisi(t.gundemMetin ?? (t.gundem || []).join('\n'));
+  if (!yapi.length) return `<p class="ipucu" style="margin:0 0 14px">Henüz girilmedi.</p>`;
+  let n = 0;
+  return `<div style="margin:0 0 14px;line-height:1.7">${yapi.map(x => x.tip === 'baslik'
+    ? `<div style="font-weight:700;margin-top:6px">${kacik(x.metin)}</div>`
+    : `<div style="padding-left:14px">${++n}. ${kacik(x.metin)}</div>`).join('')}</div>`;
+}
 
 // Mazeret satırında Enter → ekle
 document.body.addEventListener('keydown', e => {
@@ -1725,6 +1740,14 @@ document.body.addEventListener('click', e => {
     case 'kurtarma-sil': if (confirm('Eski veri kalıcı olarak silinecek. Emin misin?')) { localStorage.removeItem(KURTARMA_ANAHTAR); veriHatasi = ''; ciz(); } break;
     case 'takvime-aktar': takvimeAktar(); break;
     case 'mazeret-ekle': mazeretEkle(id); break;
+    case 'gundem-duzenle': gundemDuzenlenen = id; ciz(); setTimeout(() => document.getElementById('gundem_metin_' + id)?.focus(), 30); break;
+    case 'gundem-vazgec': gundemDuzenlenen = null; ciz(); break;
+    case 'gundem-kaydet': {
+      const t = state.toplantilar.find(x => x.id === id); if (!t) break;
+      t.gundemMetin = document.getElementById('gundem_metin_' + id).value;
+      t.gundem = gundemMaddeleri(t.gundemMetin);
+      gundemDuzenlenen = null; kaydet(); ciz(); toast(`✔️ ${t.gundem.length} gündem maddesi kaydedildi`); break;
+    }
     case 'mazeret-sil': { const t = state.toplantilar.find(x => x.id === id); if (t) { t.mazeretListe.splice(Number(b.dataset.i), 1); kaydet(); ciz(); } break; }
     case 'uyeler-kaydet': {
       const l = document.getElementById('a_uyeler').value.split('\n').map(x => x.trim().replace(/\s+/g, ' ')).filter(Boolean);
