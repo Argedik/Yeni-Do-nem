@@ -517,7 +517,9 @@ function yazdir(html) {
 }
 
 /* ---------------- Yönlendirme ---------------- */
-let aktifGorunum = 'bugun';
+// Açık sekme hatırlanır: sayfa yenilenince aynı sekmede kalınır.
+const GORUNUMLER = ['bugun', 'takvim', 'rutin', 'toplanti', 'drive', 'ayar'];
+let aktifGorunum = (() => { try { const v = sessionStorage.getItem(ANAHTAR + '_sekme'); return GORUNUMLER.includes(v) ? v : 'bugun'; } catch (e) { return 'bugun'; } })();
 let takvimAy = new Date().getMonth();
 let takvimYil = new Date().getFullYear();
 
@@ -535,7 +537,7 @@ function ciz() {
     `${b.getDate()} ${AY_ADLARI[b.getMonth()]} ${b.getFullYear()}<br>${GUN_ADLARI[b.getDay()]}`;
   document.getElementById('birimAdi').textContent = state.ayar.birim || 'Üniversite Birimi';
 }
-function git(v) { aktifGorunum = v; window.scrollTo(0, 0); ciz(); }
+function git(v) { aktifGorunum = v; try { sessionStorage.setItem(ANAHTAR + '_sekme', v); } catch (e) { } window.scrollTo(0, 0); ciz(); }
 
 /* ================================================================
    GÖRÜNÜM: BUGÜN
