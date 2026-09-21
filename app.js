@@ -812,25 +812,23 @@ function hizliIsAc(tarih) { isFormuAc('', { tarih: tarih || bugunISO() }); }
    ================================================================ */
 function gorunumToplanti() {
   const bg = bugunISO();
-  const sirali = [...state.toplantilar].sort((a, b) => b.tarih.localeCompare(a.tarih));
-  const gelecek = sirali.filter(t => t.tarih >= bg).reverse();
-  const gecmis = sirali.filter(t => t.tarih < bg);
+  const sirali = [...state.toplantilar].sort((a, b) => a.tarih.localeCompare(b.tarih));
+  const siradaki = sirali.find(t => t.tarih >= bg);
+  const gecmis = sirali.filter(t => t.tarih < bg).reverse();
 
   return `
   <div class="kart"><div class="kart-bas">
-      <h2>🪑 Toplantılar <span class="sayi">${state.toplantilar.length}</span></h2>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn sm gri" data-act="donem-olustur">📅 Dönem toplantılarını oluştur</button>
-        <button class="btn sm" data-act="toplanti-duzenle" data-id="">+ Toplantı ekle</button>
-      </div></div>
-    <div class="kart-ic">
-      <p class="ipucu">Toplantı tarihlerini girdiğinde; hatırlatma mesajı, gündem çıktısı, mazeret listesi, tutanak ve yoklama işleri <b>otomatik olarak</b> Bugün sekmesine düşer.</p>
+      <h2>🪑 Sıradaki toplantı</h2>
+      <button class="btn sm gri" data-act="toplanti-duzenle" data-id="">+ Ek toplantı</button>
     </div></div>
+  ${siradaki ? toplantiKarti(siradaki) : `<div class="kart"><div class="bos">Yaklaşan toplantı yok.</div></div>`}
 
-  <div class="bolum-baslik">Yaklaşan (${gelecek.length})</div>
-  ${gelecek.length ? gelecek.map(toplantiKarti).join('') : `<div class="kart"><div class="bos">Yaklaşan toplantı yok. <b>Dönem toplantılarını oluştur</b> ile tek seferde ekleyebilirsin.</div></div>`}
-
-  ${gecmis.length ? `<div class="bolum-baslik">Geçmiş (${gecmis.length})</div>${gecmis.slice(0, 20).map(toplantiKarti).join('')}` : ''}`;
+  ${gecmis.length ? `<div class="kart"><div class="kart-ic sifir">
+    <details class="acilir"><summary><span class="ad">Geçmiş toplantılar</span><span class="etiket saat">${gecmis.length}</span></summary>
+      <ul class="is-liste">${gecmis.slice(0, 12).map(t => `<li class="is"><div class="is-govde"><div class="is-ad">${kisaTarih(t.tarih)} · ${GUN_ADLARI[tarihNesnesi(t.tarih).getDay()]}</div>
+        <div class="is-alt">${t.tutanakLink ? `<a class="btn sm gri" href="${kacik(t.tutanakLink)}" target="_blank" rel="noopener">📝 Tutanak</a>` : '<span class="etiket saat">Tutanak linki yok</span>'}
+        <button class="btn sm gri" data-act="toplanti-duzenle" data-id="${t.id}">Düzenle</button></div></div></li>`).join('')}</ul>
+    </details></div></div>` : ''}`;
 }
 
 /**
@@ -845,7 +843,6 @@ function sonTutanak(t) {
 
 function toplantiKarti(t) {
   const gundem = (t.gundem || []).filter(Boolean);
-  const mazeretSayisi = (t.mazeretler || '').split('\n').filter(s => s.trim()).length;
   const onceki = sonTutanak(t);
   return `<div class="kart">
     <div class="kart-bas">
@@ -853,29 +850,20 @@ function toplantiKarti(t) {
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn sm gri" data-act="gundem-yazdir" data-id="${t.id}">🖨️ Gündem çıktısı</button>
         ${onceki
-      ? `<a class="btn sm gri" href="${kacik(onceki.tutanakLink)}" target="_blank" rel="noopener"
-             title="${kisaTarih(onceki.tarih)} toplantısının tutanağı — açıp 1 adet yazdır">📝 Son tutanak</a>`
+      ? `<a class="btn sm gri" href="${kacik(onceki.tutanakLink)}" target="_blank" rel="noopener" title="${kisaTarih(onceki.tarih)} toplantısının tutanağı">📝 Son tutanak</a>`
       : `<button class="btn sm gri" data-act="tutanak-yok">📝 Son tutanak</button>`}
         <button class="btn sm gri" data-act="mazeret-kopya" data-id="${t.id}">📋 Mazeret listesi</button>
         <button class="btn sm gri" data-act="toplanti-duzenle" data-id="${t.id}">Düzenle</button>
       </div></div>
     <div class="kart-ic">
       ${t.yer ? `<p style="margin:0 0 10px"><b>Yer:</b> ${kacik(t.yer)}</p>` : ''}
-      <div class="rozet-sira" style="margin-bottom:12px">
-        <span>🟡 Mazeret bildiren <b>${mazeretSayisi}</b></span>
-        ${t.katilimNot ? `<span>✅ Katılım <b>${kacik(t.katilimNot)}</b></span>` : ''}
-      </div>
-      <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Gündem maddeleri</h4>
+      <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Gündem</h4>
       ${gundem.length ? `<ol style="margin:0 0 14px;padding-left:20px">${gundem.map(g => `<li>${kacik(g)}</li>`).join('')}</ol>`
-      : `<p class="ipucu" style="margin:0 0 14px">Gündem girilmemiş — Düzenle ile 3 maddeyi yaz.</p>`}
+      : `<p class="ipucu" style="margin:0 0 14px">Henüz girilmedi.</p>`}
       <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Mazeretler</h4>
       <textarea data-act-input="mazeretler" data-t="${t.id}" style="min-height:78px"
-        placeholder="Her satıra bir kişi:&#10;Ayşe Y. — ders programı&#10;Zeynep K. — sınav">${kacik(t.mazeretler || '')}</textarea>
-      <p class="ipucu" style="margin:5px 0 0">Yazdıkça kaydedilir. <b>📋 Mazeret listesi</b> butonu bunu tarih başlığıyla kopyalar.</p>
-      <div class="form-satir" style="margin-top:14px">
-        ${t.tutanakLink ? `<a class="btn sm gri" href="${kacik(t.tutanakLink)}" target="_blank" rel="noopener">📝 Tutanak dosyası</a>` : ''}
-        ${driveUrl('Arşiv') ? `<a class="btn sm gri" href="${kacik(driveUrl('Arşiv'))}" target="_blank" rel="noopener">📁 Arşiv klasörü</a>` : ''}
-      </div>
+        placeholder="Gelemeyecekler — her satıra bir kişi">${kacik(t.mazeretler || '')}</textarea>
+      ${t.tutanakLink ? `<div class="form-satir" style="margin-top:12px"><a class="btn sm gri" href="${kacik(t.tutanakLink)}" target="_blank" rel="noopener">📝 Tutanak dosyası</a></div>` : ''}
     </div></div>`;
 }
 
