@@ -1100,12 +1100,16 @@ function isKaydet(id) {
 
 /** Yeni eklenen işi telefonun takvimine de eklemeyi teklif eder. */
 function takvimTeklifi(is) {
+  // Yalnız telefonda ve kullanıcı kapatmadıysa: dosya telefonun takvimi için, bilgisayarda gereksiz.
+  const telefon = /iPhone|iPad|iPod|Android/.test(navigator.userAgent);
+  if (!telefon || state.ayar.takvimTeklifiKapali) return;
   const adet = icsUret(is.id).split('BEGIN:VEVENT').length - 1;
   if (!adet) return;
   modalAc('📲 Telefon takvimine de eklensin mi?', `
     <p class="ipucu" style="margin-top:0"><b>${kacik(is.ad)}</b> — ${tekrarMetni(is)}${is.saat ? ' · ' + is.saat : ' · saat girilmedi, 09:00 kabul edilir'}</p>
     <p class="ipucu">Panel bildirimleri telefonun takviminden gelir. Bu iş daha önce indirdiğin takvim dosyasında yok; dönem sonuna kadar <b>${adet}</b> olay olarak şimdi ekleyebilirsin.</p>`,
-    `<button class="btn gri" data-act="modal-kapat">Gerekmez</button>
+    `<button class="btn gri sm" data-act="takvim-teklifi-kapat">Bir daha sorma</button>
+     <button class="btn gri" data-act="modal-kapat">Gerekmez</button>
      <button class="btn" data-act="tek-is-takvim" data-id="${is.id}">📲 Takvime ekle</button>`);
 }
 
@@ -1586,6 +1590,7 @@ document.body.addEventListener('click', e => {
     case 'kurtarma-sil': if (confirm('Eski veri kalıcı olarak silinecek. Emin misin?')) { localStorage.removeItem(KURTARMA_ANAHTAR); veriHatasi = ''; ciz(); } break;
     case 'takvime-aktar': takvimeAktar(); break;
     case 'tek-is-takvim': tekIsiTakvimeAktar(id); modalKapat(); break;
+    case 'takvim-teklifi-kapat': state.ayar.takvimTeklifiKapali = true; kaydet(); modalKapat(); toast('Tamam — istersen Ayarlar › Takvime aktar ile toplu eklersin'); break;
     case 'yedek-yukle': document.getElementById('yedekDosya').click(); break;
     case 'sifirla':
       if (confirm('TÜM veriler silinip başlangıç haline dönülecek. Emin misin?') &&
