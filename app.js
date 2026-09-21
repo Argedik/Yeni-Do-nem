@@ -4,6 +4,8 @@
    ========================================================= */
 
 const ANAHTAR = 'sekreterya_v1';
+const KURTARMA_ANAHTAR = ANAHTAR + '_kurtarma'; // okunamayan veri burada saklanır
+let veriHatasi = '';
 const GUN_ADLARI = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
 const GM_HATIRLATMA = 'Toplantı hatırlatma mesajını GM grubuna ilet';
 
@@ -137,9 +139,23 @@ function yukle() {
       surum: v.surum || 1,
     });
   } catch (e) {
-    console.warn('Veri okunamadı, sıfırdan başlanıyor.', e);
+    // Sessizce sıfırlamak yerine: bozuk/okunamayan veri ayrı anahtarda saklanır, ekranda uyarı çıkar.
+    console.warn('Veri okunamadı.', e);
+    try {
+      const ham = localStorage.getItem(ANAHTAR);
+      if (ham) { localStorage.setItem(KURTARMA_ANAHTAR, ham); veriHatasi = String(e && e.message || e); }
+    } catch (_) { }
     return varsayilanVeri();
   }
+}
+function kurtarmaIndir() {
+  const ham = localStorage.getItem(KURTARMA_ANAHTAR);
+  if (!ham) { toast('Kurtarma verisi yok'); return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([ham], { type: 'application/json' }));
+  a.download = `sekreterya-kurtarma-${bugunISO()}.json`;
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('⬇️ Eski veri indirildi — Ayarlar › Yedekten geri yükle ile deneyebilirsin');
 }
 function kaydet() {
   try { localStorage.setItem(ANAHTAR, JSON.stringify(state)); }
@@ -461,12 +477,18 @@ function gorunumBugun() {
   const yaklasanToplanti = state.toplantilar.filter(t => t.tarih >= bg).sort((a, b) => a.tarih.localeCompare(b.tarih))[0];
 
   let serit = '';
+  if (veriHatasi || localStorage.getItem(KURTARMA_ANAHTAR)) {
+    serit += `<div class="serit uyari" style="border-color:#e7bdb7;background:#fdf3f2">🛟 <div><b>Kayıtlı veri okunamadı, panel sıfırdan başladı.</b> Eski veri saklandı; indirip <b>Ayarlar › Yedekten geri yükle</b> ile geri almayı dene.
+      ${veriHatasi ? `<br><span class="ipucu">Hata: ${kacik(veriHatasi)}</span>` : ''}
+      <br><button class="btn sm" style="margin-top:8px" data-act="kurtarma-indir">⬇️ Eski veriyi indir</button>
+      <button class="btn sm gri" style="margin-top:8px" data-act="kurtarma-sil">Gerekmez, sil</button></div></div>`;
+  }
   if (!state.toplantilar.length) {
-    serit = `<div class="serit uyari">⚠️ <div>Henüz toplantı tarihi girilmemiş. Toplantıya bağlı işler (hatırlatma, gündem, tutanak, yoklama) ancak toplantı tarihleri girilince listede çıkar.
+    serit += `<div class="serit uyari">⚠️ <div>Henüz toplantı tarihi girilmemiş. Toplantıya bağlı işler (hatırlatma, gündem, tutanak, yoklama) ancak toplantı tarihleri girilince listede çıkar.
       <br><button class="btn sm" style="margin-top:8px" data-act="git" data-view="toplanti">Toplantıları oluştur →</button></div></div>`;
   } else if (yaklasanToplanti) {
     const f = gunFarki(bg, yaklasanToplanti.tarih);
-    serit = `<div class="serit bilgi">🪑 <div><b>Sıradaki toplantı:</b> ${uzunTarih(yaklasanToplanti.tarih)} — ${kacik(yaklasanToplanti.saat || state.ayar.toplantiSaat)}
+    serit += `<div class="serit bilgi">🪑 <div><b>Sıradaki toplantı:</b> ${uzunTarih(yaklasanToplanti.tarih)} — ${kacik(yaklasanToplanti.saat || state.ayar.toplantiSaat)}
       ${yaklasanToplanti.yer ? ' · ' + kacik(yaklasanToplanti.yer) : ''} <b>(${f === 0 ? 'bugün' : f + ' gün sonra'})</b></div></div>`;
   }
 
@@ -1265,6 +1287,8 @@ document.body.addEventListener('click', e => {
       gmAdlariniGuncelle(state);
       kaydet(); ciz(); toast('✔️ Ayarlar kaydedildi'); break;
     case 'yedek-indir': yedekIndir(); break;
+    case 'kurtarma-indir': kurtarmaIndir(); break;
+    case 'kurtarma-sil': if (confirm('Eski veri kalıcı olarak silinecek. Emin misin?')) { localStorage.removeItem(KURTARMA_ANAHTAR); veriHatasi = ''; ciz(); } break;
     case 'takvime-aktar': takvimeAktar(); break;
     case 'tek-is-takvim': tekIsiTakvimeAktar(id); modalKapat(); break;
     case 'yedek-yukle': document.getElementById('yedekDosya').click(); break;
