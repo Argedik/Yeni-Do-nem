@@ -1063,10 +1063,14 @@ function icsUret() {
   const d = new Date();
   const bit = iso(new Date(d.getMonth() >= 6 ? d.getFullYear() + 1 : d.getFullYear(), 5, 30));
   const damga = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+  // Panelin adresi: bildirimden olaya, olaydan tek dokunuşla panele geçilsin (file:// ise eklenmez).
+  const panelUrl = /^https?:/.test(location.href) ? location.origin + location.pathname : '';
   const olay = (uid, baslik, tarih, saat, dakika, aciklama) => [
     'BEGIN:VEVENT', `UID:${uid}@sekreterya`, `DTSTAMP:${damga}`,
     `DTSTART:${icsZaman(tarih, saat)}`, `DURATION:PT${dakika}M`,
-    `SUMMARY:${icsMetin(baslik)}`, aciklama ? `DESCRIPTION:${icsMetin(aciklama)}` : '',
+    `SUMMARY:${icsMetin(baslik)}`,
+    `DESCRIPTION:${icsMetin([aciklama, panelUrl ? 'Panel: ' + panelUrl : ''].filter(Boolean).join('\n'))}`,
+    panelUrl ? `URL:${panelUrl}` : '',
     'BEGIN:VALARM', 'ACTION:DISPLAY', 'TRIGGER:PT0M', `DESCRIPTION:${icsMetin(baslik)}`, 'END:VALARM',
     'END:VEVENT'].filter(Boolean);
   const satirlar = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Sekreterya Paneli//TR', 'CALSCALE:GREGORIAN',
