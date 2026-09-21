@@ -1242,9 +1242,11 @@ function toplantiKarti(t) {
       </div></div>
     <div class="kart-ic">
       ${t.yer ? `<p style="margin:0 0 10px"><b>Yer:</b> ${kacik(t.yer)}</p>` : ''}
-      <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Gündem</h4>
-      ${gundem.length ? `<ol style="margin:0 0 14px;padding-left:20px">${gundem.map(g => `<li>${kacik(g)}</li>`).join('')}</ol>`
-      : `<p class="ipucu" style="margin:0 0 14px">Henüz girilmedi.</p>`}
+      <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Gündem maddeleri</h4>
+      <div style="display:grid;gap:6px;margin-bottom:14px">
+        ${[0, 1, 2].map(i => `<div style="display:flex;gap:8px;align-items:center"><b style="color:var(--soluk);width:18px">${i + 1}.</b>
+          <input type="text" data-gundem="${i}" data-t="${t.id}" value="${kacik((t.gundem || [])[i] || '')}" placeholder="${i + 1}. gündem maddesi" style="flex:1"></div>`).join('')}
+      </div>
       <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Mazeretler</h4>
       ${katilimOzeti(t)}
       ${mazeretTablosu(t)}
@@ -1627,6 +1629,14 @@ document.body.addEventListener('change', e => {
     return;
   }
   if (e.target.id === 'yedekDosya' && e.target.files[0]) yedekYukle(e.target.files[0]);
+});
+
+// Gündem maddeleri yazıldıkça kaydedilir (yeniden çizmeden — imleç kaçmasın)
+document.body.addEventListener('input', e => {
+  const g = e.target.closest('[data-gundem]'); if (!g) return;
+  const t = state.toplantilar.find(x => x.id === g.dataset.t); if (!t) return;
+  t.gundem = t.gundem || ['', '', ''];
+  t.gundem[Number(g.dataset.gundem)] = e.target.value; kaydet();
 });
 
 // Mazeret satırında Enter → ekle
