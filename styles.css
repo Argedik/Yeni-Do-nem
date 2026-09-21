@@ -176,6 +176,9 @@ textarea{resize:vertical; min-height:80px; line-height:1.55}
 .acilir summary .etiket{flex-shrink:0}
 .acilir-ic{padding:0 16px 14px 38px; background:#fbfcfd}
 
+.gundem-metin{margin:0 0 14px; padding:8px 10px; border:1px dashed transparent; border-radius:8px; line-height:1.7; white-space:pre-wrap; cursor:text}
+.gundem-metin:hover{border-color:var(--cizgi); background:var(--zemin)}
+
 /* ---------- Tablo ---------- */
 table{width:100%; border-collapse:collapse; font-size:14px}
 th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--cizgi)}

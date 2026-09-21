@@ -183,6 +183,9 @@ textarea{resize:vertical; min-height:80px; line-height:1.55}
 .acilir summary .etiket{flex-shrink:0}
 .acilir-ic{padding:0 16px 14px 38px; background:#fbfcfd}
 
+.gundem-metin{margin:0 0 14px; padding:8px 10px; border:1px dashed transparent; border-radius:8px; line-height:1.7; white-space:pre-wrap; cursor:text}
+.gundem-metin:hover{border-color:var(--cizgi); background:var(--zemin)}
+
 /* ---------- Tablo ---------- */
 table{width:100%; border-collapse:collapse; font-size:14px}
 th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--cizgi)}
@@ -1230,20 +1233,10 @@ function toplantiKarti(t) {
   return `<div class="kart">
     <div class="kart-bas">
       <h2>${kisaTarih(t.tarih)} · ${GUN_ADLARI[tarihNesnesi(t.tarih).getDay()]} <span class="sayi">${kacik(t.saat || state.ayar.toplantiSaat)}</span></h2>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn sm gri" data-act="gundem-yazdir" data-id="${t.id}">🖨️ Gündem çıktısı</button>
-        ${onceki
-      ? `<a class="btn sm gri" href="${kacik(onceki.tutanakLink)}" target="_blank" rel="noopener" title="${kisaTarih(onceki.tarih)} toplantısının tutanağı">📝 Son tutanak</a>`
-      : `<button class="btn sm gri" data-act="tutanak-yok">📝 Son tutanak</button>`}
-        <button class="btn sm gri" data-act="mazeret-kopya" data-id="${t.id}">📋 Mazeret listesi</button>
-        <button class="btn sm gri" data-act="toplanti-duzenle" data-id="${t.id}">Düzenle</button>
-      </div></div>
+    </div>
     <div class="kart-ic">
       ${t.yer ? `<p style="margin:0 0 10px"><b>Yer:</b> ${kacik(t.yer)}</p>` : ''}
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
-        <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin:0">Gündem maddeleri</h4>
-        ${gundemDuzenlenen === t.id ? '' : `<button class="btn sm gri" data-act="gundem-duzenle" data-id="${t.id}">${(t.gundem || []).length ? 'Düzenle' : '+ Gündem yaz'}</button>`}
-      </div>
+      <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Gündem maddeleri</h4>
       ${gundemDuzenlenen === t.id ? `
         <textarea id="gundem_metin_${t.id}" style="min-height:140px" placeholder="Gündem metnini olduğu gibi yapıştır.">${kacik(t.gundemMetin ?? (t.gundem || []).join('\n'))}</textarea>
         <div class="form-satir" style="margin:8px 0 14px">
@@ -1649,11 +1642,10 @@ function gundemYapisi(metin) {
   }).filter(x => x.metin);
 }
 function gundemMaddeleri(metin) { return gundemYapisi(metin).filter(x => x.tip === 'madde').map(x => x.metin); }
-/** Gündem metni yapıştırıldığı gibi gösterilir: numara eklenmez, satırlar korunur. */
+/** Gündem metni yapıştırıldığı gibi gösterilir: numara eklenmez, satırlar korunur. Üzerine dokununca düzenlenir. */
 function gundemMetniHTML(t) {
   const m = (t.gundemMetin ?? (t.gundem || []).join('\n')).trim();
-  if (!m) return `<p class="ipucu" style="margin:0 0 14px">Henüz girilmedi.</p>`;
-  return `<div style="margin:0 0 14px;line-height:1.7;white-space:pre-wrap">${kacik(m)}</div>`;
+  return `<div class="gundem-metin" data-act="gundem-duzenle" data-id="${t.id}" title="Düzenlemek için dokun">${m ? kacik(m) : '<span class="ipucu">Gündem metnini yapıştırmak için dokun…</span>'}</div>`;
 }
 
 // Mazeret satırında Enter → ekle
