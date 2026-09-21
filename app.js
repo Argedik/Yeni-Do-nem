@@ -470,8 +470,10 @@ function gorunumBugun() {
   const hepsi = olusumlar(enEski, gunEkle(bg, 30));
   const gecen = hepsi.filter(o => o.tarih < bg && !o.tamam);
   const bugunler = hepsi.filter(o => o.tarih === bg);
-  const hafta = hepsi.filter(o => o.tarih > bg && gunFarki(bg, o.tarih) <= 7);
-  const sonra = hepsi.filter(o => gunFarki(bg, o.tarih) > 7 && gunFarki(bg, o.tarih) <= 30);
+  // Hafta Cuma ile biter: "Bu hafta" = yarından bu Cuma'ya kadar; Cumartesi'den itibaren yeni hafta sayılır.
+  const haftaSonu = gunEkle(bg, (5 - tarihNesnesi(bg).getDay() + 7) % 7);
+  const hafta = hepsi.filter(o => o.tarih > bg && o.tarih <= haftaSonu);
+  const sonra = hepsi.filter(o => o.tarih > haftaSonu && gunFarki(bg, o.tarih) <= 30);
   const bugunTamam = bugunler.filter(o => o.tamam).length;
 
   const yaklasanToplanti = state.toplantilar.filter(t => t.tarih >= bg).sort((a, b) => a.tarih.localeCompare(b.tarih))[0];
@@ -502,15 +504,15 @@ function gorunumBugun() {
   <div class="ozet-grid">
     <div class="ozet gec"><div class="buyuk">${gecen.length}</div><div class="etiket-alt">Geciken</div></div>
     <div class="ozet bugun"><div class="buyuk">${bugunler.length - bugunTamam}</div><div class="etiket-alt">Bugün kalan</div></div>
-    <div class="ozet hafta"><div class="buyuk">${hafta.length}</div><div class="etiket-alt">7 gün içinde</div></div>
+    <div class="ozet hafta"><div class="buyuk">${hafta.length}</div><div class="etiket-alt">Bu hafta (Cuma'ya kadar)</div></div>
     <div class="ozet tamam"><div class="buyuk">${bugunTamam}</div><div class="etiket-alt">Bugün biten</div></div>
   </div>
 
   ${gecen.length ? kartIsler('⏰ Geciken işler', gecen, 'gecmis') : ''}
   ${kartIsler('📋 Bugün yapılacaklar', bugunler, '', `<button class="btn sm" data-act="hizli-is">+ Tek seferlik iş</button>`)}
-  ${kartIsler('🔜 Önümüzdeki 7 gün', hafta)}
+  ${kartIsler(haftaSonu === bg ? '🔜 Bu hafta — Cuma, hafta tamamlandı' : `🔜 Bu hafta — Cuma ${kisaTarih(haftaSonu).slice(0, 5)} dahil`, hafta)}
   ${surekliKart()}
-  ${sonra.length ? kartIsler('📅 Bu ay içinde (8–30 gün)', sonra) : ''}
+  ${sonra.length ? kartIsler('📅 Sonraki haftalar (30 güne kadar)', sonra) : ''}
   `;
 }
 
