@@ -1236,14 +1236,6 @@ function toplantiKarti(t) {
     </div>
     <div class="kart-ic">
       ${t.yer ? `<p style="margin:0 0 10px"><b>Yer:</b> ${kacik(t.yer)}</p>` : ''}
-      <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Gündem maddeleri</h4>
-      ${gundemDuzenlenen === t.id ? `
-        <textarea id="gundem_metin_${t.id}" style="min-height:140px" placeholder="Gündem metnini olduğu gibi yapıştır.">${kacik(t.gundemMetin ?? (t.gundem || []).join('\n'))}</textarea>
-        <div class="form-satir" style="margin:8px 0 14px">
-          <button class="btn gri sm" data-act="gundem-vazgec">Vazgeç</button>
-          <button class="btn yesil sm" data-act="gundem-kaydet" data-id="${t.id}">✔ Kaydet</button>
-        </div>`
-      : gundemMetniHTML(t)}
       <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Mazeretler</h4>
       ${katilimOzeti(t)}
       ${mazeretTablosu(t)}
@@ -1253,6 +1245,15 @@ function toplantiKarti(t) {
         <button class="btn sm" data-act="mazeret-ekle" data-id="${t.id}">+ Ekle</button>
       </div>
       <datalist id="uyeListesi">${(state.uyeler || []).map(u => `<option value="${kacik(u)}">`).join('')}</datalist>
+      <div style="height:14px"></div>
+      <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Gündem maddeleri</h4>
+      ${gundemDuzenlenen === t.id ? `
+        <textarea id="gundem_metin_${t.id}" style="min-height:140px" placeholder="Gündem metnini olduğu gibi yapıştır.">${kacik(t.gundemMetin ?? (t.gundem || []).join('\n'))}</textarea>
+        <div class="form-satir" style="margin:8px 0 14px">
+          <button class="btn gri sm" data-act="gundem-vazgec">Vazgeç</button>
+          <button class="btn yesil sm" data-act="gundem-kaydet" data-id="${t.id}">✔ Kaydet</button>
+        </div>`
+      : gundemMetniHTML(t)}
       ${t.tutanakLink ? `<div class="form-satir" style="margin-top:12px"><a class="btn sm gri" href="${kacik(t.tutanakLink)}" target="_blank" rel="noopener">📝 Tutanak dosyası</a></div>` : ''}
     </div></div>`;
 }
