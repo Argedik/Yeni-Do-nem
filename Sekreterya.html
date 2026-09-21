@@ -1204,10 +1204,6 @@ function gorunumToplanti() {
   const gecmis = sirali.filter(t => t.tarih < bg).reverse();
 
   return `
-  <div class="kart"><div class="kart-bas">
-      <h2>🪑 Sıradaki toplantı</h2>
-      <button class="btn sm gri" data-act="toplanti-duzenle" data-id="">+ Ek toplantı</button>
-    </div></div>
   ${siradaki ? toplantiKarti(siradaki) : `<div class="kart"><div class="bos">Yaklaşan toplantı yok.</div></div>`}
 
   ${gecmis.length ? `<div class="kart"><div class="kart-ic sifir">
