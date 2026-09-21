@@ -5,3 +5,7 @@ sekreterya-yedek-*.json
 
 # macOS
 .DS_Store
+
+# Sunucu üzerinden cihazlar arası paylaşılan veri (kişisel bilgi içerir)
+veri.json
+veri.json.tmp

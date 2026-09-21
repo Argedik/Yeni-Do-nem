@@ -158,8 +158,68 @@ function kurtarmaIndir() {
   toast('⬇️ Eski veri indirildi — Ayarlar › Yedekten geri yükle ile deneyebilirsin');
 }
 function kaydet() {
+  state.guncelleme = Date.now();
   try { localStorage.setItem(ANAHTAR, JSON.stringify(state)); }
   catch (e) { toast('⚠️ Kaydedilemedi: depolama dolu olabilir'); }
+  sunucuyaYaz();
+}
+
+/* ---------------- Cihazlar arası ortak veri (sunucu.py) ----------------
+   Panel http üzerinden açıldıysa veri Mac'teki sunucuda da tutulur; telefon ve
+   bilgisayar aynı kaydı görür. En son kaydeden kazanır (guncelleme zaman damgası).
+   file:// ile açıldıysa yalnız tarayıcı deposu kullanılır. */
+const SUNUCU_VAR = /^https?:/.test(location.href);
+const ESLESME_ANAHTAR = ANAHTAR + '_eslesti';
+let yazmaZamanlayici = null, sonSunucuGuncelleme = 0, bekleyenUzak = null;
+function uzakVeriyiAl(veri) {
+  const t = varsayilanVeri();
+  state = goc({ ...t, ...veri, ayar: { ...t.ayar, ...(veri.ayar || {}) }, yapildi: veri.yapildi || {}, surekli: veri.surekli || {}, surum: veri.surum || 1 });
+  sonSunucuGuncelleme = Number(veri.guncelleme) || 0;
+  try { localStorage.setItem(ANAHTAR, JSON.stringify(state)); } catch (e) { }
+  ciz();
+}
+function sunucuyaYaz() {
+  if (!SUNUCU_VAR) return;
+  clearTimeout(yazmaZamanlayici);
+  yazmaZamanlayici = setTimeout(() => {
+    sonSunucuGuncelleme = state.guncelleme;
+    fetch('veri', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state) })
+      .catch(() => { });
+  }, 400);
+}
+async function sunucudanCek(ilk) {
+  if (!SUNUCU_VAR) return;
+  let veri;
+  try {
+    const r = await fetch('veri', { cache: 'no-store' });
+    if (r.status === 404) { if (ilk) sunucuyaYaz(); return; }   // sunucuda henüz veri yok: bizimkini gönder
+    if (!r.ok) return;
+    veri = await r.json();
+  } catch (e) { return; }
+  const uzak = Number(veri.guncelleme) || 0, yerel = Number(state.guncelleme) || 0;
+  // Bu cihaz sunucuyla hiç eşleşmemiş ve ikisinde de veri var: sessizce ezme, kullanıcıya sor.
+  if (ilk && !localStorage.getItem(ESLESME_ANAHTAR) && uzak > 0 && depoVar && localStorage.getItem(ANAHTAR)) {
+    localStorage.setItem(ESLESME_ANAHTAR, '1');
+    if (JSON.stringify(veri.isler) !== JSON.stringify(state.isler) || JSON.stringify(veri.toplantilar) !== JSON.stringify(state.toplantilar)) {
+      bekleyenUzak = veri;
+      modalAc('🔄 İki farklı kayıt var', `
+        <p class="ipucu" style="margin-top:0">Bu cihazda ve ortak kayıtta (diğer cihazdan) farklı veriler var. Bundan sonra hepsi tek kayıtta tutulacak; şimdilik hangisi kalsın?</p>
+        <div class="form-satir">
+          <div class="alan"><label>Bu cihaz</label><div>${state.isler.filter(i => !i.arsiv).length} iş · ${state.toplantilar.length} toplantı</div></div>
+          <div class="alan"><label>Ortak kayıt</label><div>${(veri.isler || []).filter(i => !i.arsiv).length} iş · ${(veri.toplantilar || []).length} toplantı</div></div>
+        </div>
+        <p class="ipucu">Emin değilsen önce <b>Yedek indir</b>; seçilmeyen taraf kaybolur.</p>`,
+        `<button class="btn gri sm" data-act="yedek-indir">⬇️ Yedek indir</button>
+         <button class="btn gri" data-act="eslesme-uzak">Ortak kaydı al</button>
+         <button class="btn" data-act="eslesme-yerel">Bu cihazdaki kalsın</button>`);
+      return;
+    }
+  }
+  if (uzak <= yerel || uzak === sonSunucuGuncelleme) { if (ilk && yerel > uzak) sunucuyaYaz(); return; }
+  // Kullanıcı bir şey yazıyorsa bekle; bir sonraki kontrolde alınır.
+  if (!document.getElementById('modalKatman').hidden || document.activeElement?.tagName === 'TEXTAREA') return;
+  uzakVeriyiAl(veri);
+  if (!ilk) toast('🔄 Diğer cihazdan gelen değişiklikler alındı');
 }
 
 /**
@@ -1269,6 +1329,8 @@ document.body.addEventListener('click', e => {
     case 'kurtarma-indir': kurtarmaIndir(); break;
     case 'kurtarma-sil': if (confirm('Eski veri kalıcı olarak silinecek. Emin misin?')) { localStorage.removeItem(KURTARMA_ANAHTAR); veriHatasi = ''; ciz(); } break;
     case 'takvime-aktar': takvimeAktar(); break;
+    case 'eslesme-uzak': if (bekleyenUzak) uzakVeriyiAl(bekleyenUzak); bekleyenUzak = null; modalKapat(); toast('✔️ Ortak kayıt alındı'); break;
+    case 'eslesme-yerel': bekleyenUzak = null; modalKapat(); kaydet(); toast('✔️ Bu cihazdaki veri ortak kayıt oldu'); break;
     case 'tek-is-takvim': tekIsiTakvimeAktar(id); modalKapat(); break;
     case 'takvim-teklifi-kapat': state.ayar.takvimTeklifiKapali = true; kaydet(); modalKapat(); toast('Tamam — istersen Ayarlar › Takvime aktar ile toplu eklersin'); break;
     case 'yedek-yukle': document.getElementById('yedekDosya').click(); break;
@@ -1287,3 +1349,6 @@ ciz();
 if (depoVar) kaydet();   // göç sonucunu hemen sabitle
 setInterval(saatKontrol, 60000);
 saatKontrol();
+sunucudanCek(true);
+setInterval(() => sunucudanCek(false), 15000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) sunucudanCek(false); });
