@@ -812,13 +812,13 @@ function gorunumBugun() {
   <div class="ozet-grid">
     <div class="ozet gec"><div class="buyuk">${gecen.length}</div><div class="etiket-alt">Geciken</div></div>
     <div class="ozet bugun"><div class="buyuk">${bugunler.length - bugunTamam}</div><div class="etiket-alt">Bugün kalan</div></div>
-    <div class="ozet hafta"><div class="buyuk">${hafta.length}</div><div class="etiket-alt">Bu hafta (Cuma'ya kadar)</div></div>
+    <div class="ozet hafta"><div class="buyuk">${hafta.length}</div><div class="etiket-alt">Bu hafta</div></div>
     <div class="ozet tamam"><div class="buyuk">${bugunTamam}</div><div class="etiket-alt">Bugün biten</div></div>
   </div>
 
   ${gecen.length ? kartIsler('⏰ Geciken işler', gecen, 'gecmis') : ''}
-  ${kartIsler('📋 Bugün yapılacaklar', bugunler, '', `<button class="btn sm" data-act="hizli-is">+ Tek seferlik iş</button>`)}
-  ${kartIsler(haftaSonu === bg ? '🔜 Bu hafta — Cuma, hafta tamamlandı' : `🔜 Bu hafta — Cuma ${kisaTarih(haftaSonu).slice(0, 5)} dahil`, hafta)}
+  ${kartIsler('📋 Bugün yapılacaklar', bugunler, '', `<button class="btn sm" data-act="hizli-is">+ İş ekle</button>`)}
+  ${kartIsler('🔜 Bu hafta', hafta)}
   ${surekliKart()}
   ${sonra.length ? kartIsler('📅 Sonraki haftalar (30 güne kadar)', sonra) : ''}
   `;
@@ -941,7 +941,7 @@ function gunModalAc(tarih) {
     ${liste.length ? `<ul class="is-liste" style="margin:-6px -4px">${liste.map(o => isSatiri(o)).join('')}</ul>`
       : `<div class="bos">Bu güne planlanmış iş yok.</div>`}`;
   modalAc(uzunTarih(tarih), ic,
-    `<button class="btn gri" data-act="hizli-is" data-date="${tarih}">+ Bu güne iş ekle</button>
+    `<button class="btn gri" data-act="hizli-is" data-date="${tarih}">+ İş ekle</button>
      <button class="btn yesil" data-act="gun-kaydet">✔ Kaydet</button>`);
 }
 
@@ -1022,23 +1022,24 @@ function acilirSatir(is) {
     </div></details>`;
 }
 
-function isFormuAc(id) {
-  const is = state.isler.find(i => i.id === id) || { kategori: 'Toplantı', tip: 'toplanti', ofset: 0, saat: '', ayGunu: 1, gun: 3, tarih: bugunISO() };
+function isFormuAc(id, varsayilan) {
+  const is = state.isler.find(i => i.id === id)
+    || { kategori: 'İletişim', tip: 'tekseferlik', ofset: 0, saat: '', ayGunu: 1, gun: Number(state.ayar.toplantiGunu), tarih: bugunISO(), ...(varsayilan || {}) };
   const secili = (a, b) => a == b ? 'selected' : '';
-  modalAc(id ? 'İşi düzenle' : 'Yeni iş', `
-    <div class="form-satir"><div class="alan"><label>İş adı</label>
-      <input type="text" id="f_ad" value="${kacik(is.ad || '')}" placeholder="Örn: Tutanağı Drive'a ekle"></div></div>
+  modalAc(id ? 'İşi düzenle' : 'İş ekle', `
+    <div class="form-satir"><div class="alan"><label>Ne yapılacak?</label>
+      <input type="text" id="f_ad" value="${kacik(is.ad || '')}" placeholder="Örn: Afiş tasarımını onaya gönder"></div></div>
     <div class="form-satir">
       <div class="alan"><label>Kategori</label><select id="f_kat">
         ${KATEGORILER.map(k => `<option ${secili(k, is.kategori)}>${k}</option>`).join('')}</select></div>
       <div class="alan"><label>Saat (isteğe bağlı)</label><input type="time" id="f_saat" value="${kacik(is.saat || '')}"></div>
     </div>
-    <div class="form-satir"><div class="alan"><label>Ne zaman tekrarlanacak?</label><select id="f_tip">
-      <option value="toplanti" ${secili('toplanti', is.tip)}>Toplantıya bağlı (her toplantıda)</option>
-      <option value="haftalik" ${secili('haftalik', is.tip)}>Her hafta belirli gün</option>
-      <option value="aylik" ${secili('aylik', is.tip)}>Her ay belirli gün</option>
-      <option value="tekseferlik" ${secili('tekseferlik', is.tip)}>Tek seferlik tarih</option>
-      <option value="surekli" ${secili('surekli', is.tip)}>Sürekli takip (tarihsiz)</option>
+    <div class="form-satir"><div class="alan"><label>Ne zaman?</label><select id="f_tip">
+      <option value="tekseferlik" ${secili('tekseferlik', is.tip)}>Tek seferlik — belirli bir tarihte</option>
+      <option value="haftalik" ${secili('haftalik', is.tip)}>Her hafta — belirli gün</option>
+      <option value="aylik" ${secili('aylik', is.tip)}>Her ay — belirli gün</option>
+      <option value="toplanti" ${secili('toplanti', is.tip)}>Her toplantıda — toplantıya göre</option>
+      <option value="surekli" ${secili('surekli', is.tip)}>Sürekli takip — tarihsiz</option>
     </select></div></div>
     <div class="form-satir" id="f_detay"></div>
     <div class="form-satir"><div class="alan"><label>Açıklama / not</label>
@@ -1046,7 +1047,8 @@ function isFormuAc(id) {
     <div class="form-satir"><div class="alan"><label>Drive linki (boş bırakırsan kategoriye göre otomatik)</label>
       <input type="url" id="f_link" value="${kacik(is.link || '')}" placeholder="https://drive.google.com/..."></div></div>`,
     `<button class="btn gri" data-act="modal-kapat">Vazgeç</button>
-     <button class="btn" data-act="is-kaydet" data-id="${id || ''}">Kaydet</button>`);
+     <button class="btn" data-act="is-kaydet" data-id="${id || ''}">${id ? 'Kaydet' : 'Ekle'}</button>`);
+  if (!id) setTimeout(() => document.getElementById('f_ad')?.focus(), 50);
 
   const detayCiz = () => {
     const tip = document.getElementById('f_tip').value;
@@ -1092,22 +1094,22 @@ function isKaydet(id) {
     state.isler[i] = { ...state.isler[i], ...kayit };
     delete state.isler[i].ofset;   // eski tek değerli alan artık kullanılmıyor
   } else state.isler.push(kayit);
-  kaydet(); modalKapat(); ciz(); toast('✔️ Kaydedildi');
+  kaydet(); modalKapat(); ciz(); toast(i >= 0 ? '✔️ Kaydedildi' : '✔️ İş eklendi');
+  if (i < 0 && tip !== 'surekli') takvimTeklifi(kayit);
 }
 
-function hizliIsAc(tarih) {
-  modalAc('Tek seferlik iş ekle', `
-    <div class="form-satir"><div class="alan"><label>Ne yapılacak?</label>
-      <input type="text" id="h_ad" placeholder="Örn: Afiş tasarımını onaya gönder"></div></div>
-    <div class="form-satir">
-      <div class="alan"><label>Tarih</label><input type="date" id="h_tarih" value="${tarih || bugunISO()}"></div>
-      <div class="alan"><label>Saat</label><input type="time" id="h_saat"></div>
-      <div class="alan"><label>Kategori</label><select id="h_kat">${KATEGORILER.map(k => `<option>${k}</option>`).join('')}</select></div>
-    </div>`,
-    `<button class="btn gri" data-act="modal-kapat">Vazgeç</button>
-     <button class="btn" data-act="hizli-kaydet">Ekle</button>`);
-  setTimeout(() => document.getElementById('h_ad')?.focus(), 50);
+/** Yeni eklenen işi telefonun takvimine de eklemeyi teklif eder. */
+function takvimTeklifi(is) {
+  const adet = icsUret(is.id).split('BEGIN:VEVENT').length - 1;
+  if (!adet) return;
+  modalAc('📲 Telefon takvimine de eklensin mi?', `
+    <p class="ipucu" style="margin-top:0"><b>${kacik(is.ad)}</b> — ${tekrarMetni(is)}${is.saat ? ' · ' + is.saat : ' · saat girilmedi, 09:00 kabul edilir'}</p>
+    <p class="ipucu">Panel bildirimleri telefonun takviminden gelir. Bu iş daha önce indirdiğin takvim dosyasında yok; dönem sonuna kadar <b>${adet}</b> olay olarak şimdi ekleyebilirsin.</p>`,
+    `<button class="btn gri" data-act="modal-kapat">Gerekmez</button>
+     <button class="btn" data-act="tek-is-takvim" data-id="${is.id}">📲 Takvime ekle</button>`);
 }
+
+function hizliIsAc(tarih) { isFormuAc('', { tarih: tarih || bugunISO() }); }
 
 /* ================================================================
    GÖRÜNÜM: TOPLANTILAR
@@ -1527,23 +1529,6 @@ document.body.addEventListener('click', e => {
     case 'gun-ac': gunModalAc(b.dataset.date); break;
 
     case 'hizli-is': hizliIsAc(b.dataset.date); break;
-    case 'hizli-kaydet': {
-      const ad = document.getElementById('h_ad').value.trim();
-      if (!ad) { toast('⚠️ İş adı boş olamaz'); return; }
-      const yeniIs = {
-        id: yeniId(), ad, kategori: document.getElementById('h_kat').value, tip: 'tekseferlik',
-        tarih: document.getElementById('h_tarih').value || bugunISO(), saat: document.getElementById('h_saat').value,
-        aciklama: '', link: '', arsiv: false
-      };
-      state.isler.push(yeniIs);
-      kaydet(); modalKapat(); ciz(); toast('✔️ İş eklendi');
-      modalAc('📲 Telefon takvimine de eklensin mi?', `
-        <p class="ipucu" style="margin-top:0"><b>${kacik(ad)}</b> — ${kisaTarih(yeniIs.tarih)}${yeniIs.saat ? ' · ' + yeniIs.saat : ' · saat girilmedi, 09:00 kabul edilir'}</p>
-        <p class="ipucu">Panel bildirimleri telefonun takviminden gelir. Bu iş daha önce indirdiğin takvim dosyasında yok; şimdi tek başına ekleyebilirsin.</p>`,
-        `<button class="btn gri" data-act="modal-kapat">Gerekmez</button>
-         <button class="btn" data-act="tek-is-takvim" data-id="${yeniIs.id}">📲 Takvime ekle</button>`);
-      break;
-    }
 
     case 'is-duzenle': isFormuAc(id); break;
     case 'is-kaydet': isKaydet(id); break;
