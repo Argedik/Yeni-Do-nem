@@ -78,6 +78,7 @@ function varsayilanVeri() {
       { id: yeniId(), ad: 'Aylık raporu sunum haline getir ve ana birime gönder', kategori: 'Rapor', tip: 'aylik', ayGunu: 28, saat: '18:00', aciklama: '', link: '' },
     ],
     toplantilar: [],
+    uyeler: [],        // ekip listesi: tam ad (Ayarlar'dan düzenlenir)
     linkler: [
       { id: yeniId(), ad: 'Tutanaklar', ikon: '📝', url: '' },
       { id: yeniId(), ad: 'Yoklama Dosyası', ikon: '✅', url: '' },
@@ -86,7 +87,7 @@ function varsayilanVeri() {
     ],
     yapildi: {},   // "isId#YYYY-MM-DD" -> {t: zaman}
     surekli: {},   // isId -> son yapıldı ISO
-    surum: 18,     // veri şeması sürümü (göç için)
+    surum: 19,     // veri şeması sürümü (göç için)
   };
 }
 
@@ -118,7 +119,7 @@ function donemToplantilariniTamamla() {
   let n = 0;
   for (; gunFarki(g, bit) >= 0; g = gunEkle(g, 7)) {
     if (mevcut.has(g)) continue;
-    state.toplantilar.push({ id: yeniId(), tarih: g, saat: state.ayar.toplantiSaat, yer: state.ayar.toplantiYer || '', gundem: ['', '', ''], mazeretler: '', katilimNot: '', notlar: '', tutanakLink: '' });
+    state.toplantilar.push({ id: yeniId(), tarih: g, saat: state.ayar.toplantiSaat, yer: state.ayar.toplantiYer || '', gundem: ['', '', ''], mazeretListe: [], katilimNot: '', notlar: '', tutanakLink: '' });
     n++;
   }
   if (n) kaydet();
@@ -383,6 +384,22 @@ function goc(v) {
     else if (Number(v.ayar.toplantiGunu) === 3) v.ayar.toplantiGunu = 2;
     gmAdlariniGuncelle(v);
     v.surum = 18;
+  }
+  if (v.surum < 19) {
+    // Mazeretler serbest metinden "kişi + sebep" tablosuna geçti. Eski satırlar "Ad — sebep" diye ayrıştırılır.
+    if (!Array.isArray(v.uyeler)) v.uyeler = [];
+    (v.toplantilar || []).forEach(t => {
+      if (Array.isArray(t.mazeretListe)) return;
+      t.mazeretListe = String(t.mazeretler || '').split('\n').map(x => x.trim()).filter(Boolean).map(x => {
+        const m = x.match(/^(.*?)\s*(?:—|–|-|:)\s*(.*)$/);
+        if (m && m[1]) return { ad: m[1].trim(), sebep: m[2].trim() };
+        // Ayraç yoksa: ilk iki kelime ad soyad, kalanı mazeret ("Ayşe Yılmaz sınavı var" → Ayşe Yılmaz / sınavı var)
+        const k = x.split(/\s+/);
+        return k.length > 2 ? { ad: k.slice(0, 2).join(' '), sebep: k.slice(2).join(' ').replace(/\.$/, '') } : { ad: x, sebep: '' };
+      });
+      delete t.mazeretler;
+    });
+    v.surum = 19;
   }
   return v;
 }
@@ -921,8 +938,14 @@ function toplantiKarti(t) {
       ${gundem.length ? `<ol style="margin:0 0 14px;padding-left:20px">${gundem.map(g => `<li>${kacik(g)}</li>`).join('')}</ol>`
       : `<p class="ipucu" style="margin:0 0 14px">Henüz girilmedi.</p>`}
       <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Mazeretler</h4>
-      <textarea data-act-input="mazeretler" data-t="${t.id}" style="min-height:78px"
-        placeholder="Gelemeyecekler — her satıra bir kişi">${kacik(t.mazeretler || '')}</textarea>
+      ${katilimOzeti(t)}
+      ${mazeretTablosu(t)}
+      <div class="form-satir" style="margin-top:10px;align-items:flex-end">
+        <div class="alan" style="flex:1"><input type="text" id="mz_ad_${t.id}" list="uyeListesi" placeholder="İsim yaz — listeden tamamlanır" autocomplete="off"></div>
+        <div class="alan" style="flex:1"><input type="text" id="mz_sebep_${t.id}" placeholder="Mazereti (isteğe bağlı)" data-enter-act="mazeret-ekle" data-id="${t.id}"></div>
+        <button class="btn sm" data-act="mazeret-ekle" data-id="${t.id}">+ Ekle</button>
+      </div>
+      <datalist id="uyeListesi">${(state.uyeler || []).map(u => `<option value="${kacik(u)}">`).join('')}</datalist>
       ${t.tutanakLink ? `<div class="form-satir" style="margin-top:12px"><a class="btn sm gri" href="${kacik(t.tutanakLink)}" target="_blank" rel="noopener">📝 Tutanak dosyası</a></div>` : ''}
     </div></div>`;
 }
@@ -963,7 +986,7 @@ function toplantiKaydet(id) {
   };
   const i = state.toplantilar.findIndex(x => x.id === id);
   if (i >= 0) state.toplantilar[i] = { ...state.toplantilar[i], ...kayit };
-  else state.toplantilar.push({ id: yeniId(), mazeretler: '', ...kayit });
+  else state.toplantilar.push({ id: yeniId(), mazeretListe: [], ...kayit });
   kaydet(); modalKapat(); ciz(); toast('✔️ Toplantı kaydedildi');
 }
 
@@ -1004,7 +1027,7 @@ function donemKaydet() {
   let n = 0;
   for (let g = bas; gunFarki(g, bit) >= 0; g = gunEkle(g, 7 * aralik)) {
     if (mevcut.has(g)) continue;
-    state.toplantilar.push({ id: yeniId(), tarih: g, saat, yer, gundem: ['', '', ''], mazeretler: '', katilimNot: '', notlar: '', tutanakLink: '' });
+    state.toplantilar.push({ id: yeniId(), tarih: g, saat, yer, gundem: ['', '', ''], mazeretListe: [], katilimNot: '', notlar: '', tutanakLink: '' });
     n++;
   }
   state.ayar.toplantiGunu = gun; state.ayar.toplantiSaat = saat; state.ayar.toplantiYer = yer;
@@ -1014,14 +1037,52 @@ function donemKaydet() {
 }
 
 // Toplantı kartındaki serbest metni, gruba iletilecek biçime çevirir.
+/** "Toplam · Mazeretli · Gelecek" satırı. Üye listesi yoksa yalnız mazeretli sayısı. */
+function katilimOzeti(t) {
+  const m = (t.mazeretListe || []).length, n = (state.uyeler || []).length;
+  if (!n) return `<div class="rozet-sira" style="margin-bottom:10px"><span>🟡 Mazeretli <b>${m}</b></span>
+    <span class="ipucu">Üye listesini <b>Ayarlar</b>'dan girersen kaç kişinin geleceği de hesaplanır.</span></div>`;
+  return `<div class="rozet-sira" style="margin-bottom:10px">
+    <span>👥 Toplam <b>${n}</b></span><span>🟡 Mazeretli <b>${m}</b></span><span>✅ Gelecek <b>${Math.max(0, n - m)}</b></span></div>`;
+}
+function mazeretTablosu(t) {
+  const l = t.mazeretListe || [];
+  if (!l.length) return `<p class="ipucu" style="margin:0 0 6px">Henüz mazeret yok.</p>`;
+  return `<table><thead><tr><th style="width:40%">Ad Soyad</th><th>Mazeret</th><th style="width:44px"></th></tr></thead><tbody>
+    ${l.map((m, i) => `<tr><td><b>${kacik(m.ad)}</b></td><td>${kacik(m.sebep) || '<span class="ipucu">—</span>'}</td>
+      <td class="sag"><button class="btn sm gri" data-act="mazeret-sil" data-id="${t.id}" data-i="${i}" title="Kaldır">✕</button></td></tr>`).join('')}
+  </tbody></table>`;
+}
+/** Yazılan ismi üye listesinden tamamlar: "hüda" → "Hüdanur Küçük" (tek eşleşme varsa). */
+function uyeTamamla(yazilan) {
+  const y = yazilan.trim(); if (!y) return '';
+  const k = (x) => x.toLocaleLowerCase('tr');
+  const tam = (state.uyeler || []).find(u => k(u) === k(y)); if (tam) return tam;
+  const adaylar = (state.uyeler || []).filter(u => k(u).startsWith(k(y)) || k(u).split(' ').some(p => p.startsWith(k(y))));
+  return adaylar.length === 1 ? adaylar[0] : y;
+}
+function mazeretEkle(tId) {
+  const t = state.toplantilar.find(x => x.id === tId); if (!t) return;
+  const adK = document.getElementById('mz_ad_' + tId), sebepK = document.getElementById('mz_sebep_' + tId);
+  const ad = uyeTamamla(adK.value); if (!ad) { toast('⚠️ İsim yaz'); adK.focus(); return; }
+  t.mazeretListe = t.mazeretListe || [];
+  const varolan = t.mazeretListe.find(m => m.ad.toLocaleLowerCase('tr') === ad.toLocaleLowerCase('tr'));
+  if (varolan) varolan.sebep = sebepK.value.trim() || varolan.sebep;
+  else t.mazeretListe.push({ ad, sebep: sebepK.value.trim() });
+  kaydet(); ciz();
+  setTimeout(() => document.getElementById('mz_ad_' + tId)?.focus(), 30);
+}
+
 function mazeretMetni(id) {
   const t = state.toplantilar.find(x => x.id === id);
   if (!t) return '';
-  const satir = (t.mazeretler || '').split('\n').map(s => s.trim()).filter(Boolean);
-  if (!satir.length) return '';
-  return `📌 ${kisaTarih(t.tarih)} Toplantısı — Mazeret Bildirenler (${satir.length})\n\n`
-    + satir.map((s, i) => `${i + 1}. ${s}`).join('\n')
-    + (t.katilimNot ? `\n\n✅ Katılım: ${t.katilimNot}` : '');
+  const l = t.mazeretListe || [];
+  if (!l.length) return '';
+  const n = (state.uyeler || []).length;
+  return `📌 ${kisaTarih(t.tarih)} Toplantısı — Mazeret Bildirenler (${l.length})\n\n`
+    + l.map((m, i) => `${i + 1}. ${m.ad}${m.sebep ? ' — ' + m.sebep : ''}`).join('\n')
+    + (n ? `\n\n✅ Gelecek: ${Math.max(0, n - l.length)} / ${n}` : '')
+    + (t.katilimNot ? `\n✅ Katılım: ${t.katilimNot}` : '');
 }
 
 function gundemYazdir(id) {
@@ -1091,6 +1152,13 @@ function gorunumAyar() {
         <div class="alan"><label>Toplantı yeri</label><input type="text" id="a_yer" value="${kacik(a.toplantiYer || '')}"></div>
       </div>
       <button class="btn" data-act="ayar-kaydet">Kaydet</button>
+    </div></div>
+
+  <div class="kart"><div class="kart-bas"><h2>👥 Üye listesi <span class="sayi">${(state.uyeler || []).length}</span></h2></div>
+    <div class="kart-ic">
+      <p class="ipucu" style="margin-top:0">Her satıra bir kişi, ad soyad. Toplantı kartında isim yazarken buradan tamamlanır; gelecek sayısı buna göre hesaplanır.</p>
+      <textarea id="a_uyeler" style="min-height:140px" placeholder="Ayşe Yılmaz&#10;Zeynep Kaya">${kacik((state.uyeler || []).join('\n'))}</textarea>
+      <div class="form-satir" style="margin-top:10px"><button class="btn" data-act="uyeler-kaydet">Listeyi kaydet</button></div>
     </div></div>
 
   <div class="kart"><div class="kart-bas"><h2>📲 Telefona bildirim</h2></div>
@@ -1253,11 +1321,13 @@ document.body.addEventListener('change', e => {
   if (e.target.id === 'yedekDosya' && e.target.files[0]) yedekYukle(e.target.files[0]);
 });
 
-// Mazeret metni yazıldıkça kaydet (yeniden çizmeden — imleç kaçmasın)
-document.body.addEventListener('input', e => {
-  const s = e.target.closest('[data-act-input="mazeretler"]'); if (!s) return;
-  const t = state.toplantilar.find(x => x.id === s.dataset.t); if (!t) return;
-  t.mazeretler = e.target.value; kaydet();
+// Mazeret satırında Enter → ekle
+document.body.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const k = e.target.closest('[data-enter-act="mazeret-ekle"]') || (e.target.id?.startsWith('mz_ad_') ? e.target : null);
+  if (!k) return;
+  e.preventDefault();
+  mazeretEkle(k.dataset.id || k.id.replace('mz_ad_', ''));
 });
 
 document.body.addEventListener('click', e => {
@@ -1329,6 +1399,12 @@ document.body.addEventListener('click', e => {
     case 'kurtarma-indir': kurtarmaIndir(); break;
     case 'kurtarma-sil': if (confirm('Eski veri kalıcı olarak silinecek. Emin misin?')) { localStorage.removeItem(KURTARMA_ANAHTAR); veriHatasi = ''; ciz(); } break;
     case 'takvime-aktar': takvimeAktar(); break;
+    case 'mazeret-ekle': mazeretEkle(id); break;
+    case 'mazeret-sil': { const t = state.toplantilar.find(x => x.id === id); if (t) { t.mazeretListe.splice(Number(b.dataset.i), 1); kaydet(); ciz(); } break; }
+    case 'uyeler-kaydet': {
+      const l = document.getElementById('a_uyeler').value.split('\n').map(x => x.trim().replace(/\s+/g, ' ')).filter(Boolean);
+      state.uyeler = [...new Set(l)]; kaydet(); ciz(); toast(`✔️ ${state.uyeler.length} üye kaydedildi`); break;
+    }
     case 'eslesme-uzak': if (bekleyenUzak) uzakVeriyiAl(bekleyenUzak); bekleyenUzak = null; modalKapat(); toast('✔️ Ortak kayıt alındı'); break;
     case 'eslesme-yerel': bekleyenUzak = null; modalKapat(); kaydet(); toast('✔️ Bu cihazdaki veri ortak kayıt oldu'); break;
     case 'tek-is-takvim': tekIsiTakvimeAktar(id); modalKapat(); break;
