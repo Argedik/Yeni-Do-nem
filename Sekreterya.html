@@ -1249,12 +1249,12 @@ function toplantiKarti(t) {
         ${gundemDuzenlenen === t.id ? '' : `<button class="btn sm gri" data-act="gundem-duzenle" data-id="${t.id}">${(t.gundem || []).length ? 'Düzenle' : '+ Gündem yaz'}</button>`}
       </div>
       ${gundemDuzenlenen === t.id ? `
-        <textarea id="gundem_metin_${t.id}" style="min-height:140px" placeholder="Gündem metnini yapıştır. Her satır bir madde; 📌 / 1. / - gibi işaretler temizlenir. İşaretsiz satırlar başlık olur.">${kacik(t.gundemMetin ?? (t.gundem || []).join('\n'))}</textarea>
+        <textarea id="gundem_metin_${t.id}" style="min-height:140px" placeholder="Gündem metnini olduğu gibi yapıştır.">${kacik(t.gundemMetin ?? (t.gundem || []).join('\n'))}</textarea>
         <div class="form-satir" style="margin:8px 0 14px">
           <button class="btn gri sm" data-act="gundem-vazgec">Vazgeç</button>
           <button class="btn yesil sm" data-act="gundem-kaydet" data-id="${t.id}">✔ Kaydet</button>
         </div>`
-      : gundemListesiHTML(t)}
+      : gundemMetniHTML(t)}
       <h4 style="font-size:13px;color:var(--soluk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Mazeretler</h4>
       ${katilimOzeti(t)}
       ${mazeretTablosu(t)}
@@ -1411,8 +1411,7 @@ function gundemYazdir(id) {
       <div>TOPLANTI GÜNDEMİ</div>
       <div>${uzunTarih(t.tarih)} · ${kacik(t.saat || state.ayar.toplantiSaat)}${t.yer ? ' · ' + kacik(t.yer) : ''}</div>
     </div>
-    ${(() => { let n = 0; return gundemYapisi(t.gundemMetin ?? g.join('\n')).map(x => x.tip === 'baslik'
-      ? `<h3 style="margin:14px 0 4px">${kacik(x.metin)}</h3>` : `<div style="margin:3px 0 3px 18px">${++n}. ${kacik(x.metin)}</div>`).join(''); })()}
+    <div style="white-space:pre-wrap;line-height:1.8;font-size:15px">${kacik((t.gundemMetin ?? g.join('\n')).trim())}</div>
     <div class="p-alt">Katılan: ............ &nbsp;&nbsp; Mazeret: ............ &nbsp;&nbsp; Sekreterya imza: ............</div>
     ${onceki ? `<div class="p-alt">Ek: ${kisaTarih(onceki.tarih)} tarihli toplantı tutanağı — 1 adet çıktı.</div>` : ''}`);
 }
@@ -1654,13 +1653,11 @@ function gundemYapisi(metin) {
   }).filter(x => x.metin);
 }
 function gundemMaddeleri(metin) { return gundemYapisi(metin).filter(x => x.tip === 'madde').map(x => x.metin); }
-function gundemListesiHTML(t) {
-  const yapi = gundemYapisi(t.gundemMetin ?? (t.gundem || []).join('\n'));
-  if (!yapi.length) return `<p class="ipucu" style="margin:0 0 14px">Henüz girilmedi.</p>`;
-  let n = 0;
-  return `<div style="margin:0 0 14px;line-height:1.7">${yapi.map(x => x.tip === 'baslik'
-    ? `<div style="font-weight:700;margin-top:6px">${kacik(x.metin)}</div>`
-    : `<div style="padding-left:14px">${++n}. ${kacik(x.metin)}</div>`).join('')}</div>`;
+/** Gündem metni yapıştırıldığı gibi gösterilir: numara eklenmez, satırlar korunur. */
+function gundemMetniHTML(t) {
+  const m = (t.gundemMetin ?? (t.gundem || []).join('\n')).trim();
+  if (!m) return `<p class="ipucu" style="margin:0 0 14px">Henüz girilmedi.</p>`;
+  return `<div style="margin:0 0 14px;line-height:1.7;white-space:pre-wrap">${kacik(m)}</div>`;
 }
 
 // Mazeret satırında Enter → ekle
