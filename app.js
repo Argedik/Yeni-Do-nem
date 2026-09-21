@@ -1058,7 +1058,7 @@ function icsZaman(tarih, saat) {
   const [h, m] = (saat || '09:00').split(':').map(Number);
   return tarih.replace(/-/g, '') + 'T' + String(h).padStart(2, '0') + String(m).padStart(2, '0') + '00';
 }
-function icsUret() {
+function icsUret(sadeceIsId) {
   const bug = bugunISO();
   const d = new Date();
   const bit = iso(new Date(d.getMonth() >= 6 ? d.getFullYear() + 1 : d.getFullYear(), 5, 30));
@@ -1075,18 +1075,28 @@ function icsUret() {
     'END:VEVENT'].filter(Boolean);
   const satirlar = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Sekreterya Paneli//TR', 'CALSCALE:GREGORIAN',
     'X-WR-CALNAME:Sekreterya', 'X-WR-TIMEZONE:Europe/Istanbul'];
-  olusumlar(bug, bit).filter(o => !o.tamam).forEach(o =>
+  olusumlar(bug, bit).filter(o => !o.tamam && (!sadeceIsId || o.isId === sadeceIsId)).forEach(o =>
     satirlar.push(...olay(o.anahtar, o.is.ad, o.tarih, o.saat || '09:00', 30, o.is.aciklama)));
-  state.toplantilar.filter(t => t.tarih >= bug).forEach(t =>
+  if (!sadeceIsId) state.toplantilar.filter(t => t.tarih >= bug).forEach(t =>
     satirlar.push(...olay('toplanti-' + t.id, '🪑 Birim toplantısı', t.tarih, t.saat || state.ayar.toplantiSaat, 90, t.yer)));
   satirlar.push('END:VCALENDAR');
   return satirlar.join('\r\n');
 }
-function takvimeAktar() {
+function icsIndir(icerik, ad) {
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([icsUret()], { type: 'text/calendar;charset=utf-8' }));
-  a.download = `sekreterya-${bugunISO()}.ics`;
-  a.click(); URL.revokeObjectURL(a.href);
+  a.href = URL.createObjectURL(new Blob([icerik], { type: 'text/calendar;charset=utf-8' }));
+  a.download = ad; a.click(); URL.revokeObjectURL(a.href);
+}
+/** Tek bir işi telefon takvimine ekler (yeni eklenen tek seferlik iş için). */
+function tekIsiTakvimeAktar(isId) {
+  const is = state.isler.find(i => i.id === isId);
+  if (!is) return;
+  icsIndir(icsUret(isId), `sekreterya-is-${is.tarih || bugunISO()}.ics`);
+  const iphone = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  toast(iphone ? '📲 İndi — sağ üstteki ⬇︎ okuna dokun, dosyayı aç, "Ekle" de' : '📲 Dosya indi — açıp takvime ekle');
+}
+function takvimeAktar() {
+  icsIndir(icsUret(), `sekreterya-${bugunISO()}.ics`);
   const iphone = /iPhone|iPad|iPod/.test(navigator.userAgent);
   const android = /Android/.test(navigator.userAgent);
   const adimlar = iphone ? [
@@ -1188,12 +1198,19 @@ document.body.addEventListener('click', e => {
     case 'hizli-kaydet': {
       const ad = document.getElementById('h_ad').value.trim();
       if (!ad) { toast('⚠️ İş adı boş olamaz'); return; }
-      state.isler.push({
+      const yeniIs = {
         id: yeniId(), ad, kategori: document.getElementById('h_kat').value, tip: 'tekseferlik',
         tarih: document.getElementById('h_tarih').value || bugunISO(), saat: document.getElementById('h_saat').value,
         aciklama: '', link: '', arsiv: false
-      });
-      kaydet(); modalKapat(); ciz(); toast('✔️ İş eklendi'); break;
+      };
+      state.isler.push(yeniIs);
+      kaydet(); modalKapat(); ciz(); toast('✔️ İş eklendi');
+      modalAc('📲 Telefon takvimine de eklensin mi?', `
+        <p class="ipucu" style="margin-top:0"><b>${kacik(ad)}</b> — ${kisaTarih(yeniIs.tarih)}${yeniIs.saat ? ' · ' + yeniIs.saat : ' · saat girilmedi, 09:00 kabul edilir'}</p>
+        <p class="ipucu">Panel bildirimleri telefonun takviminden gelir. Bu iş daha önce indirdiğin takvim dosyasında yok; şimdi tek başına ekleyebilirsin.</p>`,
+        `<button class="btn gri" data-act="modal-kapat">Gerekmez</button>
+         <button class="btn" data-act="tek-is-takvim" data-id="${yeniIs.id}">📲 Takvime ekle</button>`);
+      break;
     }
 
     case 'is-duzenle': isFormuAc(id); break;
@@ -1249,6 +1266,7 @@ document.body.addEventListener('click', e => {
       kaydet(); ciz(); toast('✔️ Ayarlar kaydedildi'); break;
     case 'yedek-indir': yedekIndir(); break;
     case 'takvime-aktar': takvimeAktar(); break;
+    case 'tek-is-takvim': tekIsiTakvimeAktar(id); modalKapat(); break;
     case 'yedek-yukle': document.getElementById('yedekDosya').click(); break;
     case 'sifirla':
       if (confirm('TÜM veriler silinip başlangıç haline dönülecek. Emin misin?') &&
