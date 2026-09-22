@@ -5,11 +5,25 @@
   Böylece Mac ve telefon aynı veriyi görür (veri.json kişisel bilgi içerir, git'e girmez).
 Kullanım: python3 sunucu.py [port]  (varsayılan 8765) -> http://localhost:8765/index.html
 """
-import json, os, sys, threading
+import json, os, shutil, sys, threading, time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 VERI = "veri.json"
+YEDEK_KLASORU = "veri-yedek"      # her yazımdan önceki hal; son 200 tanesi tutulur (kurtarma için)
 KILIT = threading.Lock()
+
+def yedekle():
+    if not os.path.exists(VERI):
+        return
+    os.makedirs(YEDEK_KLASORU, exist_ok=True)
+    ad = time.strftime("veri-%Y%m%d-%H%M%S.json")
+    try:
+        shutil.copy2(VERI, os.path.join(YEDEK_KLASORU, ad))
+        eskiler = sorted(os.listdir(YEDEK_KLASORU))[:-200]
+        for e in eskiler:
+            os.remove(os.path.join(YEDEK_KLASORU, e))
+    except OSError:
+        pass
 
 class Isleyici(SimpleHTTPRequestHandler):
     def end_headers(self):
@@ -44,6 +58,7 @@ class Isleyici(SimpleHTTPRequestHandler):
         except Exception:
             self.send_response(400); self.end_headers(); return
         with KILIT:
+            yedekle()
             gecici = VERI + ".tmp"
             open(gecici, "wb").write(govde)
             os.replace(gecici, VERI)  # yarım dosya kalmaz

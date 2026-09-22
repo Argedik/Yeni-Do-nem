@@ -5,6 +5,8 @@
 
 const ANAHTAR = 'sekreterya_v1';
 const KURTARMA_ANAHTAR = ANAHTAR + '_kurtarma'; // okunamayan veri burada saklanır
+const KOLEKSIYONLAR = ['toplantilar', 'isler', 'linkler'];   // cihazlar arası kayıt kayıt birleştirilen listeler
+let oncekiSnapshot = null;   // son kayıttan bu yana neyin değiştiğini bulmak için
 let veriHatasi = '';
 const GUN_ADLARI = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
 const GM_HATIRLATMA = 'Toplantı hatırlatma mesajını GM grubuna ilet';
@@ -100,7 +102,6 @@ const depoVar = (() => {
 })();
 
 let state = yukle();
-donemToplantilariniTamamla();
 
 /**
  * Toplantı günü sabittir (Ayarlar). Önümüzde hiç toplantı kaydı yoksa dönem sonuna
@@ -122,7 +123,8 @@ function donemToplantilariniTamamla() {
     state.toplantilar.push({ id: yeniId(), tarih: g, saat: state.ayar.toplantiSaat, yer: state.ayar.toplantiYer || '', gundem: ['', '', ''], mazeretListe: [], katilimNot: '', notlar: '', tutanakLink: '' });
     n++;
   }
-  if (n) kaydet();
+  // Damgasız kaydet: otomatik açılan boş toplantılar, diğer cihazdaki dolu kayıtları ezmesin.
+  if (n) { try { localStorage.setItem(ANAHTAR, JSON.stringify(state)); } catch (e) { } oncekiSnapshot = snapshotAl(); }
 }
 
 function yukle() {
@@ -159,33 +161,116 @@ function kurtarmaIndir() {
   toast('⬇️ Eski veri indirildi — Ayarlar › Yedekten geri yükle ile deneyebilirsin');
 }
 function kaydet() {
+  damgala();
   state.guncelleme = Date.now();
   try { localStorage.setItem(ANAHTAR, JSON.stringify(state)); }
   catch (e) { toast('⚠️ Kaydedilemedi: depolama dolu olabilir'); }
   sunucuyaYaz();
 }
 
-/* ---------------- Cihazlar arası ortak veri (sunucu.py) ----------------
-   Panel http üzerinden açıldıysa veri Mac'teki sunucuda da tutulur; telefon ve
-   bilgisayar aynı kaydı görür. En son kaydeden kazanır (guncelleme zaman damgası).
-   file:// ile açıldıysa yalnız tarayıcı deposu kullanılır. */
+/* ---------------- Cihazlar arası ortak veri (sunucu.py) — BİRLEŞTİRME ----------------
+   Panel http üzerinden açıldıysa veri Mac'teki sunucuda da tutulur. İki cihazın verisi
+   kayıt kayıt birleştirilir: her toplantı/iş/link kendi değişiklik damgasını (g) taşır,
+   daha yeni olan kazanır; silinenler mezar taşıyla izlenir; işaretler birleşir.
+   Böylece telefonda yazılan Mac'te yazılanı EZMEZ. file:// ile açıldıysa yalnız tarayıcı deposu. */
 const SUNUCU_VAR = /^https?:/.test(location.href);
-const ESLESME_ANAHTAR = ANAHTAR + '_eslesti';
-let yazmaZamanlayici = null, sonSunucuGuncelleme = 0, bekleyenUzak = null;
-function uzakVeriyiAl(veri) {
+let yazmaZamanlayici = null, sonUzakDamga = '';
+
+// Kayıt anahtarı: toplantı = tarih (aynı güne iki toplantı olmaz), iş/link = ad (cihazlar farklı id üretir)
+const kayitAnahtari = (k, r) => k === 'toplantilar' ? String(r.tarih) : String(r.ad || r.id).trim().toLocaleLowerCase('tr');
+const kayitImzasi = (r) => { const { g, ...k } = r; return JSON.stringify(k); };
+function snapshotAl() {
+  const sn = { kayit: {}, uyeler: JSON.stringify(state.uyeler || []), ayar: JSON.stringify(state.ayar), yapildi: new Set(Object.keys(state.yapildi || {})) };
+  KOLEKSIYONLAR.forEach(k => (state[k] || []).forEach(r => sn.kayit[k + ':' + kayitAnahtari(k, r)] = kayitImzasi(r)));
+  return sn;
+}
+/** Son kayıttan bu yana değişen kayıtlara damga vurur; silinenleri mezar taşına yazar. */
+function damgala() {
+  const now = Date.now();
+  state.silinen = state.silinen || {}; state.yapildiSilinen = state.yapildiSilinen || {};
+  if (!oncekiSnapshot) { oncekiSnapshot = snapshotAl(); return; }
+  const o = oncekiSnapshot, mevcut = new Set();
+  KOLEKSIYONLAR.forEach(k => (state[k] || []).forEach(r => {
+    const a = k + ':' + kayitAnahtari(k, r); mevcut.add(a);
+    if (o.kayit[a] !== kayitImzasi(r)) r.g = now;
+  }));
+  Object.keys(o.kayit).forEach(a => { if (!mevcut.has(a)) state.silinen[a] = now; });
+  if (JSON.stringify(state.uyeler || []) !== o.uyeler) state.uyelerG = now;
+  if (JSON.stringify(state.ayar) !== o.ayar) state.ayarG = now;
+  o.yapildi.forEach(k => { if (!state.yapildi[k]) state.yapildiSilinen[k] = now; });
+  oncekiSnapshot = snapshotAl();
+}
+/** Anahtarları sıralı, guncelleme'siz metin — iki verinin gerçekten aynı olup olmadığını anlamak için. */
+function kanonik(v) {
+  const sirala = (x) => Array.isArray(x) ? x.map(sirala)
+    : (x && typeof x === 'object') ? Object.keys(x).sort().reduce((o, k) => (k === 'guncelleme' ? o : (o[k] = sirala(x[k]), o)), {}) : x;
+  return JSON.stringify(sirala(v));
+}
+/** Aynı toplantının iki kopyası: mazeretler birleşir, dolu gündem korunur. */
+function toplantiKaynastir(a, b) {
+  const k = (x) => String(x || '').toLocaleLowerCase('tr');
+  const silinen = { ...(b.mazeretSilinen || {}), ...(a.mazeretSilinen || {}) };
+  Object.entries(b.mazeretSilinen || {}).forEach(([ad, ts]) => silinen[ad] = Math.max(silinen[ad] || 0, ts));
+  const l = [];
+  [...(a.mazeretListe || []), ...(b.mazeretListe || [])].forEach(m => {
+    if (l.some(x => k(x.ad) === k(m.ad))) return;
+    if ((silinen[k(m.ad)] || 0) > (m.t || 0)) return;   // daha sonra silinmiş
+    l.push(m);
+  });
+  const gundemMetin = (a.gundemMetin || '').trim() ? a.gundemMetin : (b.gundemMetin || '');
+  return { ...b, ...a, mazeretListe: l, mazeretSilinen: silinen, gundemMetin, gundem: gundemMaddeleri(gundemMetin),
+    tutanakLink: a.tutanakLink || b.tutanakLink || '', notlar: a.notlar || b.notlar || '' };
+}
+/** Yerel ve uzak veriyi kayıt kayıt birleştirir. Hiçbir tarafın yazdığı sessizce kaybolmaz. */
+function birlestir(yerel, ham) {
   const t = varsayilanVeri();
-  state = goc({ ...t, ...veri, ayar: { ...t.ayar, ...(veri.ayar || {}) }, yapildi: veri.yapildi || {}, surekli: veri.surekli || {}, surum: veri.surum || 1 });
-  sonSunucuGuncelleme = Number(veri.guncelleme) || 0;
-  try { localStorage.setItem(ANAHTAR, JSON.stringify(state)); } catch (e) { }
-  ciz();
+  const uzak = goc({ ...t, ...ham, ayar: { ...t.ayar, ...(ham.ayar || {}) }, yapildi: ham.yapildi || {}, surekli: ham.surekli || {}, surum: ham.surum || 1 });
+  const sonuc = { ...yerel };
+  const silinen = { ...(yerel.silinen || {}) };
+  Object.entries(uzak.silinen || {}).forEach(([k, v]) => silinen[k] = Math.max(silinen[k] || 0, v));
+  const idEsle = {};   // uzak iş id → yerel iş id (işaretleri taşımak için)
+  KOLEKSIYONLAR.forEach(k => {
+    const m = new Map();
+    (yerel[k] || []).forEach(r => m.set(kayitAnahtari(k, r), r));
+    (uzak[k] || []).forEach(r => {
+      const a = kayitAnahtari(k, r), y = m.get(a);
+      if (!y) { m.set(a, r); return; }
+      if (k === 'isler' && r.id !== y.id) idEsle[r.id] = y.id;
+      if (k === 'toplantilar') m.set(a, (r.g || 0) > (y.g || 0) ? { ...toplantiKaynastir(r, y), id: y.id } : toplantiKaynastir(y, r));
+      else if ((r.g || 0) > (y.g || 0)) m.set(a, { ...r, id: y.id });
+    });
+    sonuc[k] = [...m.values()].filter(r => !((silinen[k + ':' + kayitAnahtari(k, r)] || 0) > (r.g || 0)));
+    if (k === 'toplantilar') sonuc[k].sort((x, z) => x.tarih.localeCompare(z.tarih));
+  });
+  // Üye listesi ve ayarlar: daha yeni damga kazanır; damgasızsa dolu olan tercih edilir.
+  sonuc.uyeler = (uzak.uyelerG || 0) > (yerel.uyelerG || 0) ? uzak.uyeler : ((yerel.uyeler || []).length ? yerel.uyeler : (uzak.uyeler || []));
+  sonuc.uyelerG = Math.max(uzak.uyelerG || 0, yerel.uyelerG || 0);
+  sonuc.ayar = (uzak.ayarG || 0) > (yerel.ayarG || 0) ? uzak.ayar : yerel.ayar;
+  sonuc.ayarG = Math.max(uzak.ayarG || 0, yerel.ayarG || 0);
+  // İşaretler: birleşim; kaldırılan işaret mezar taşı daha yeniyse kaldırılmış kalır.
+  const ys = { ...(yerel.yapildiSilinen || {}) };
+  Object.entries(uzak.yapildiSilinen || {}).forEach(([k, v]) => ys[k] = Math.max(ys[k] || 0, v));
+  const yap = { ...(yerel.yapildi || {}) };
+  Object.entries(uzak.yapildi || {}).forEach(([k, v]) => {
+    const [isId, tarih] = k.split('#'); const ak = (idEsle[isId] || isId) + '#' + tarih;
+    if (!yap[ak] || (v.t || 0) > (yap[ak].t || 0)) yap[ak] = v;
+  });
+  Object.keys(yap).forEach(k => { if ((ys[k] || 0) > (yap[k].t || 0)) delete yap[k]; });
+  sonuc.yapildi = yap; sonuc.yapildiSilinen = ys;
+  sonuc.surekli = { ...(uzak.surekli || {}), ...(yerel.surekli || {}) };
+  Object.entries(uzak.surekli || {}).forEach(([k, v]) => { if (!sonuc.surekli[k] || v > sonuc.surekli[k]) sonuc.surekli[k] = v; });
+  sonuc.silinen = silinen;
+  sonuc.surum = Math.max(uzak.surum || 1, yerel.surum || 1);
+  sonuc.guncelleme = Math.max(uzak.guncelleme || 0, yerel.guncelleme || 0);
+  return sonuc;
 }
 function sunucuyaYaz() {
   if (!SUNUCU_VAR) return;
   clearTimeout(yazmaZamanlayici);
   yazmaZamanlayici = setTimeout(() => {
-    sonSunucuGuncelleme = state.guncelleme;
+    const damga = String(state.guncelleme);
     fetch('veri', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state) })
-      .catch(() => { });
+      .then(r => { if (r.ok) sonUzakDamga = damga; }).catch(() => { });
   }, 400);
 }
 async function sunucudanCek(ilk) {
@@ -197,30 +282,21 @@ async function sunucudanCek(ilk) {
     if (!r.ok) return;
     veri = await r.json();
   } catch (e) { return; }
-  const uzak = Number(veri.guncelleme) || 0, yerel = Number(state.guncelleme) || 0;
-  // Bu cihaz sunucuyla hiç eşleşmemiş ve ikisinde de veri var: sessizce ezme, kullanıcıya sor.
-  if (ilk && !localStorage.getItem(ESLESME_ANAHTAR) && uzak > 0 && depoVar && localStorage.getItem(ANAHTAR)) {
-    localStorage.setItem(ESLESME_ANAHTAR, '1');
-    if (JSON.stringify(veri.isler) !== JSON.stringify(state.isler) || JSON.stringify(veri.toplantilar) !== JSON.stringify(state.toplantilar)) {
-      bekleyenUzak = veri;
-      modalAc('🔄 İki farklı kayıt var', `
-        <p class="ipucu" style="margin-top:0">Bu cihazda ve ortak kayıtta (diğer cihazdan) farklı veriler var. Bundan sonra hepsi tek kayıtta tutulacak; şimdilik hangisi kalsın?</p>
-        <div class="form-satir">
-          <div class="alan"><label>Bu cihaz</label><div>${state.isler.filter(i => !i.arsiv).length} iş · ${state.toplantilar.length} toplantı</div></div>
-          <div class="alan"><label>Ortak kayıt</label><div>${(veri.isler || []).filter(i => !i.arsiv).length} iş · ${(veri.toplantilar || []).length} toplantı</div></div>
-        </div>
-        <p class="ipucu">Emin değilsen önce <b>Yedek indir</b>; seçilmeyen taraf kaybolur.</p>`,
-        `<button class="btn gri sm" data-act="yedek-indir">⬇️ Yedek indir</button>
-         <button class="btn gri" data-act="eslesme-uzak">Ortak kaydı al</button>
-         <button class="btn" data-act="eslesme-yerel">Bu cihazdaki kalsın</button>`);
-      return;
-    }
-  }
-  if (uzak <= yerel || uzak === sonSunucuGuncelleme) { if (ilk && yerel > uzak) sunucuyaYaz(); return; }
+  const damga = String(veri.guncelleme || '');
+  if (damga === sonUzakDamga) return;                       // sunucuda yeni bir şey yok
   // Kullanıcı bir şey yazıyorsa bekle; bir sonraki kontrolde alınır.
-  if (!document.getElementById('modalKatman').hidden || document.activeElement?.tagName === 'TEXTAREA') return;
-  uzakVeriyiAl(veri);
-  if (!ilk) toast('🔄 Diğer cihazdan gelen değişiklikler alındı');
+  if (!document.getElementById('modalKatman').hidden || document.activeElement?.tagName === 'TEXTAREA' || gundemDuzenlenen) return;
+  const birlesik = birlestir(state, veri);
+  sonUzakDamga = damga;
+  const yerelDegisti = kanonik(birlesik) !== kanonik(state);
+  const uzakEksik = kanonik(birlestir(veri, veri)) !== kanonik(birlesik);   // sunucudaki, birleşikten farklıysa gönder
+  if (yerelDegisti) {
+    state = birlesik; oncekiSnapshot = snapshotAl();
+    try { localStorage.setItem(ANAHTAR, JSON.stringify(state)); } catch (e) { }
+    ciz();
+    if (!ilk) toast('🔄 Diğer cihazdan gelen değişiklikler alındı');
+  }
+  if (uzakEksik) { state.guncelleme = Date.now(); try { localStorage.setItem(ANAHTAR, JSON.stringify(state)); } catch (e) { } sunucuyaYaz(); }
 }
 
 /**
@@ -1061,8 +1137,9 @@ function mazeretEkle(tId) {
   const ad = uyeTamamla(adK.value); if (!ad) { toast('⚠️ İsim yaz'); adK.focus(); return; }
   t.mazeretListe = t.mazeretListe || [];
   const varolan = t.mazeretListe.find(m => m.ad.toLocaleLowerCase('tr') === ad.toLocaleLowerCase('tr'));
-  if (varolan) varolan.sebep = sebepK.value.trim() || varolan.sebep;
-  else t.mazeretListe.push({ ad, sebep: sebepK.value.trim() });
+  if (varolan) { varolan.sebep = sebepK.value.trim() || varolan.sebep; varolan.t = Date.now(); }
+  else t.mazeretListe.push({ ad, sebep: sebepK.value.trim(), t: Date.now() });
+  if (t.mazeretSilinen) delete t.mazeretSilinen[ad.toLocaleLowerCase('tr')];
   kaydet(); ciz();
   setTimeout(() => document.getElementById('mz_ad_' + tId)?.focus(), 30);
 }
@@ -1425,13 +1502,16 @@ document.body.addEventListener('click', e => {
       t.gundem = gundemMaddeleri(t.gundemMetin);
       gundemDuzenlenen = null; kaydet(); ciz(); toast(`✔️ ${t.gundem.length} gündem maddesi kaydedildi`); break;
     }
-    case 'mazeret-sil': { const t = state.toplantilar.find(x => x.id === id); if (t) { t.mazeretListe.splice(Number(b.dataset.i), 1); kaydet(); ciz(); } break; }
+    case 'mazeret-sil': {
+      const t = state.toplantilar.find(x => x.id === id); if (!t) break;
+      const [m] = t.mazeretListe.splice(Number(b.dataset.i), 1);
+      if (m) { t.mazeretSilinen = t.mazeretSilinen || {}; t.mazeretSilinen[m.ad.toLocaleLowerCase('tr')] = Date.now(); }
+      kaydet(); ciz(); break;
+    }
     case 'uyeler-kaydet': {
       const l = document.getElementById('a_uyeler').value.split('\n').map(x => x.trim().replace(/\s+/g, ' ')).filter(Boolean);
       state.uyeler = [...new Set(l)]; kaydet(); ciz(); toast(`✔️ ${state.uyeler.length} üye kaydedildi`); break;
     }
-    case 'eslesme-uzak': if (bekleyenUzak) uzakVeriyiAl(bekleyenUzak); bekleyenUzak = null; modalKapat(); toast('✔️ Ortak kayıt alındı'); break;
-    case 'eslesme-yerel': bekleyenUzak = null; modalKapat(); kaydet(); toast('✔️ Bu cihazdaki veri ortak kayıt oldu'); break;
     case 'tek-is-takvim': tekIsiTakvimeAktar(id); modalKapat(); break;
     case 'takvim-teklifi-kapat': state.ayar.takvimTeklifiKapali = true; kaydet(); modalKapat(); toast('Tamam — istersen Ayarlar › Takvime aktar ile toplu eklersin'); break;
     case 'yedek-yukle': document.getElementById('yedekDosya').click(); break;
@@ -1446,6 +1526,8 @@ document.body.addEventListener('click', e => {
 document.getElementById('bildirimAc').addEventListener('click', bildirimIzin);
 
 /* ---------------- Başlat ---------------- */
+oncekiSnapshot = snapshotAl();        // değişiklik takibi için ilk fotoğraf
+donemToplantilariniTamamla();       // toplantı yoksa dönem Salı'larını aç
 ciz();
 if (depoVar) kaydet();   // göç sonucunu hemen sabitle
 setInterval(saatKontrol, 60000);

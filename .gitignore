@@ -9,3 +9,4 @@ sekreterya-yedek-*.json
 # Sunucu üzerinden cihazlar arası paylaşılan veri (kişisel bilgi içerir)
 veri.json
 veri.json.tmp
+veri-yedek/
