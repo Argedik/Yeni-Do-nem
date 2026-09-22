@@ -495,8 +495,7 @@ function sifreSor(mesaj) {
   modalAc('🔐 Panel şifresi', `
     <p class="ipucu" style="margin-top:0">${mesaj || 'Ortak kayda bağlanmak için panel şifresini gir. Bir kez girilir, bu cihazda saklanır.'}</p>
     <div class="form-satir"><div class="alan"><label>Şifre</label><input type="password" id="p_sifre" autocomplete="current-password" data-enter-act="sifre-kaydet"></div></div>`,
-    `<button class="btn gri" data-act="sifre-vazgec">Şimdi değil</button>
-     <button class="btn" data-act="sifre-kaydet">Bağlan</button>`);
+    `<button class="btn" data-act="sifre-kaydet">Bağlan</button>`, true);
   setTimeout(() => document.getElementById('p_sifre')?.focus(), 50);
 }
 
@@ -605,7 +604,7 @@ async function sunucudanCek(ilk) {
   let veri;
   try {
     const r = await fetch('veri', { cache: 'no-store', headers: veriBasliklari() });
-    if (r.status === 401) { sifreSor(); return; }
+    if (r.status === 401) { const vardi = !!localStorage.getItem(SIFRE_ANAHTAR); localStorage.removeItem(SIFRE_ANAHTAR); sifreSor(vardi ? 'Şifre yanlış, tekrar dene.' : ''); return; }
     if (r.status === 404) { if (ilk) sunucuyaYaz(); return; }   // sunucuda henüz veri yok: bizimkini gönder
     if (!r.ok) return;
     veri = await r.json();
@@ -894,14 +893,19 @@ function toast(m) {
   clearTimeout(toastZaman);
   toastZaman = setTimeout(() => { el.hidden = true; }, 2600);
 }
-function modalAc(baslik, icHTML, altHTML) {
+/** zorunlu=true: × yok, dışına tıklayınca kapanmaz; yalnız kendi butonuyla geçilir (şifre penceresi). */
+function modalAc(baslik, icHTML, altHTML, zorunlu) {
   document.getElementById('modal').innerHTML = `
-    <div class="m-bas"><h3>${baslik}</h3><button class="kapat" data-act="modal-kapat">×</button></div>
+    <div class="m-bas"><h3>${baslik}</h3>${zorunlu ? '' : '<button class="kapat" data-act="modal-kapat">×</button>'}</div>
     <div class="m-ic">${icHTML}</div>
     <div class="m-alt">${altHTML || '<button class="btn gri" data-act="modal-kapat">Kapat</button>'}</div>`;
-  document.getElementById('modalKatman').hidden = false;
+  const k = document.getElementById('modalKatman'); k.hidden = false; k.dataset.zorunlu = zorunlu ? '1' : '';
 }
-function modalKapat() { document.getElementById('modalKatman').hidden = true; }
+function modalKapat(zorla) {
+  const k = document.getElementById('modalKatman');
+  if (k.dataset.zorunlu && !zorla) return;   // zorunlu pencere dışarıdan kapatılamaz
+  k.hidden = true; k.dataset.zorunlu = '';
+}
 function kopyala(metin) {
   const bitir = (ok) => toast(ok ? '📋 Kopyalandı' : '⚠️ Kopyalanamadı, elle seçip kopyala');
   if (navigator.clipboard?.writeText) {
@@ -1825,10 +1829,9 @@ document.body.addEventListener('click', e => {
     case 'mazeret-ekle': mazeretEkle(id); break;
     case 'sifre-kaydet': {
       const v = document.getElementById('p_sifre').value.trim(); if (!v) { toast('⚠️ Şifre boş'); break; }
-      localStorage.setItem(SIFRE_ANAHTAR, v); sifreSoruluyor = false; modalKapat(); sonUzakDamga = '';
-      sunucudanCek(true).then(() => toast('🔗 Ortak kayda bağlandı')); break;
+      localStorage.setItem(SIFRE_ANAHTAR, v); sifreSoruluyor = false; modalKapat(true); sonUzakDamga = '';
+      sunucudanCek(true).then(() => { if (!sifreSoruluyor) toast('🔗 Ortak kayda bağlandı'); }); break;
     }
-    case 'sifre-vazgec': sifreSoruluyor = false; modalKapat(); toast('Şifre girilmedi — veriler yalnız bu cihazda'); break;
     case 'gundem-duzenle': gundemDuzenlenen = id; ciz(); setTimeout(() => document.getElementById('gundem_metin_' + id)?.focus(), 30); break;
     case 'gundem-vazgec': gundemDuzenlenen = null; ciz(); break;
     case 'gundem-kaydet': {
