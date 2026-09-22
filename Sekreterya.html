@@ -554,7 +554,9 @@ function birlestir(yerel, ham) {
     if (k === 'toplantilar') sonuc[k].sort((x, z) => x.tarih.localeCompare(z.tarih));
   });
   // Üye listesi ve ayarlar: daha yeni damga kazanır; damgasızsa dolu olan tercih edilir.
-  sonuc.uyeler = (uzak.uyelerG || 0) > (yerel.uyelerG || 0) ? uzak.uyeler : ((yerel.uyeler || []).length ? yerel.uyeler : (uzak.uyeler || []));
+  // Boş liste dolu listeyi asla ezmez (bir cihaz listeyi hiç girmemiş olabilir); ikisi de doluysa yeni damga kazanır.
+  const yU = yerel.uyeler || [], uU = uzak.uyeler || [];
+  sonuc.uyeler = !yU.length ? uU : !uU.length ? yU : ((uzak.uyelerG || 0) > (yerel.uyelerG || 0) ? uU : yU);
   sonuc.uyelerG = Math.max(uzak.uyelerG || 0, yerel.uyelerG || 0);
   sonuc.ayar = (uzak.ayarG || 0) > (yerel.ayarG || 0) ? uzak.ayar : yerel.ayar;
   sonuc.ayarG = Math.max(uzak.ayarG || 0, yerel.ayarG || 0);
