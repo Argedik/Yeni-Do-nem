@@ -24,6 +24,12 @@ if "<style>" not in tek or 'src="app.js' in tek:
     raise SystemExit("HATA: index.html icindeki css/js baglantilari beklenen bicimde degil.")
 
 Path("Sekreterya.html").write_text(tek, encoding="utf-8")
+
+# Netlify yayın klasörü: yalnız gerekli üç dosya (veri.json gibi kişisel dosyalar dışarıda kalır)
+import shutil
+Path("yayin").mkdir(exist_ok=True)
+for f in ("index.html", "styles.css", "app.js"):
+    shutil.copy2(f, Path("yayin") / f)
 print("Tamam -> Sekreterya.html (%.0f KB)" % (len(tek.encode()) / 1024))
 PYEOF
 

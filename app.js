@@ -175,6 +175,19 @@ function kaydet() {
    Böylece telefonda yazılan Mac'te yazılanı EZMEZ. file:// ile açıldıysa yalnız tarayıcı deposu. */
 const SUNUCU_VAR = /^https?:/.test(location.href);
 let yazmaZamanlayici = null, sonUzakDamga = '';
+// İnternette yayındayken ortak veriye erişim şifresi (x-panel-anahtar). Yerel sunucu bunu istemez.
+const SIFRE_ANAHTAR = ANAHTAR + '_sifre';
+let sifreSoruluyor = false;
+const veriBasliklari = () => { const s = localStorage.getItem(SIFRE_ANAHTAR); return s ? { 'x-panel-anahtar': s } : {}; };
+function sifreSor(mesaj) {
+  if (sifreSoruluyor) return; sifreSoruluyor = true;
+  modalAc('🔐 Panel şifresi', `
+    <p class="ipucu" style="margin-top:0">${mesaj || 'Ortak kayda bağlanmak için panel şifresini gir. Bir kez girilir, bu cihazda saklanır.'}</p>
+    <div class="form-satir"><div class="alan"><label>Şifre</label><input type="password" id="p_sifre" autocomplete="current-password" data-enter-act="sifre-kaydet"></div></div>`,
+    `<button class="btn gri" data-act="sifre-vazgec">Şimdi değil</button>
+     <button class="btn" data-act="sifre-kaydet">Bağlan</button>`);
+  setTimeout(() => document.getElementById('p_sifre')?.focus(), 50);
+}
 
 // Kayıt anahtarı: toplantı = tarih (aynı güne iki toplantı olmaz), iş/link = ad (cihazlar farklı id üretir)
 const kayitAnahtari = (k, r) => k === 'toplantilar' ? String(r.tarih) : String(r.ad || r.id).trim().toLocaleLowerCase('tr');
@@ -271,15 +284,17 @@ function sunucuyaYaz() {
   clearTimeout(yazmaZamanlayici);
   yazmaZamanlayici = setTimeout(() => {
     const damga = String(state.guncelleme);
-    fetch('veri', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state) })
-      .then(r => { if (r.ok) sonUzakDamga = damga; }).catch(() => { });
+    fetch('veri', { method: 'POST', headers: { 'Content-Type': 'application/json', ...veriBasliklari() }, body: JSON.stringify(state) })
+      .then(r => { if (r.ok) sonUzakDamga = damga; else if (r.status === 401) sifreSor('Şifre eksik ya da yanlış; yazdıkların yalnız bu cihazda kaldı. Ortak kayda geçmesi için şifreyi gir.'); })
+      .catch(() => { });
   }, 400);
 }
 async function sunucudanCek(ilk) {
   if (!SUNUCU_VAR) return;
   let veri;
   try {
-    const r = await fetch('veri', { cache: 'no-store' });
+    const r = await fetch('veri', { cache: 'no-store', headers: veriBasliklari() });
+    if (r.status === 401) { sifreSor(); return; }
     if (r.status === 404) { if (ilk) sunucuyaYaz(); return; }   // sunucuda henüz veri yok: bizimkini gönder
     if (!r.ok) return;
     veri = await r.json();
@@ -1420,6 +1435,7 @@ function gundemMetniHTML(t) {
 // Mazeret satırında Enter → ekle
 document.body.addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
+  if (e.target.closest('[data-enter-act="sifre-kaydet"]')) { e.preventDefault(); document.querySelector('[data-act="sifre-kaydet"]')?.click(); return; }
   const k = e.target.closest('[data-enter-act="mazeret-ekle"]') || (e.target.id?.startsWith('mz_ad_') ? e.target : null);
   if (!k) return;
   e.preventDefault();
@@ -1496,6 +1512,12 @@ document.body.addEventListener('click', e => {
     case 'kurtarma-sil': if (confirm('Eski veri kalıcı olarak silinecek. Emin misin?')) { localStorage.removeItem(KURTARMA_ANAHTAR); veriHatasi = ''; ciz(); } break;
     case 'takvime-aktar': takvimeAktar(); break;
     case 'mazeret-ekle': mazeretEkle(id); break;
+    case 'sifre-kaydet': {
+      const v = document.getElementById('p_sifre').value.trim(); if (!v) { toast('⚠️ Şifre boş'); break; }
+      localStorage.setItem(SIFRE_ANAHTAR, v); sifreSoruluyor = false; modalKapat(); sonUzakDamga = '';
+      sunucudanCek(true).then(() => toast('🔗 Ortak kayda bağlandı')); break;
+    }
+    case 'sifre-vazgec': sifreSoruluyor = false; modalKapat(); toast('Şifre girilmedi — veriler yalnız bu cihazda'); break;
     case 'gundem-duzenle': gundemDuzenlenen = id; ciz(); setTimeout(() => document.getElementById('gundem_metin_' + id)?.focus(), 30); break;
     case 'gundem-vazgec': gundemDuzenlenen = null; ciz(); break;
     case 'gundem-kaydet': {

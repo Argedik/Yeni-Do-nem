@@ -1,0 +1,14 @@
+# Netlify yayın ayarı: statik panel + ortak veri fonksiyonu
+[build]
+  publish = "yayin"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/veri"
+  to = "/.netlify/functions/veri"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0"

@@ -10,3 +10,8 @@ sekreterya-yedek-*.json
 veri.json
 veri.json.tmp
 veri-yedek/
+
+# Netlify
+node_modules/
+.netlify/
+yayin/
