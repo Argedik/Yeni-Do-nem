@@ -1,0 +1,8 @@
+veri.json
+veri.json.tmp
+veri-yedek/
+node_modules/
+.netlify/
+yayin/
+.claude/
+*yedek*.json

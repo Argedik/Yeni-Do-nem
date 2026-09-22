@@ -8,8 +8,11 @@ Kullanım: python3 sunucu.py [port]  (varsayılan 8765) -> http://localhost:8765
 import json, os, shutil, sys, threading, time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
-VERI = "veri.json"
-YEDEK_KLASORU = "veri-yedek"      # her yazımdan önceki hal; son 200 tanesi tutulur (kurtarma için)
+# Veri dizini: sunucuda (Railway) kalıcı disk /data'ya bağlanır; yerelde proje klasörü.
+VERI_DIZIN = os.environ.get("VERI_DIZIN", ".")
+VERI = os.path.join(VERI_DIZIN, "veri.json")
+YEDEK_KLASORU = os.path.join(VERI_DIZIN, "veri-yedek")   # her yazımdan önceki hal; son 200 tanesi (kurtarma için)
+PANEL_ANAHTAR = os.environ.get("PANEL_ANAHTAR", "")        # doluysa /veri için x-panel-anahtar başlığı zorunlu
 KILIT = threading.Lock()
 
 def yedekle():
@@ -36,9 +39,18 @@ class Isleyici(SimpleHTTPRequestHandler):
     def _yolu(self):
         return self.path.split("?")[0]
 
+    def _yetkili(self):
+        if not PANEL_ANAHTAR:
+            return True
+        if self.headers.get("x-panel-anahtar", "") == PANEL_ANAHTAR:
+            return True
+        self.send_response(401); self.end_headers(); return False
+
     def do_GET(self):
         if self._yolu() != "/veri":
             return super().do_GET()
+        if not self._yetkili():
+            return
         with KILIT:
             if not os.path.exists(VERI):
                 self.send_response(404); self.end_headers(); return
@@ -51,6 +63,8 @@ class Isleyici(SimpleHTTPRequestHandler):
     def do_POST(self):
         if self._yolu() != "/veri":
             self.send_response(404); self.end_headers(); return
+        if not self._yetkili():
+            return
         n = int(self.headers.get("Content-Length") or 0)
         govde = self.rfile.read(n)
         try:
@@ -66,6 +80,6 @@ class Isleyici(SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("PORT", "8765"))
     print(f"Panel: http://localhost:{port}/index.html")
     ThreadingHTTPServer(("", port), Isleyici).serve_forever()

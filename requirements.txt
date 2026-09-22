@@ -1,0 +1,1 @@
+# Bağımlılık yok; Railway'in Python ortamını seçmesi için var.
