@@ -1,0 +1,4 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "deploy": { "startCommand": "python3 sunucu.py" }
+}
